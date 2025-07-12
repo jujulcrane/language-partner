@@ -16,19 +16,10 @@ export default function RootLayout() {
   // }, [user, segments]);
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: true,
-        headerStyle: { backgroundColor: '#fff' },
-        headerTintColor: '#007AFF',
-        headerTitleStyle: { fontWeight: 'bold' },
-      }}
-    >
-      {/* Stack auto-includes all files in /app as screens */}
-      {/* You can add <Stack.Screen> here to customize titles or options */}
-      {/* Example: */}
-      {/* <Stack.Screen name="index" options={{ title: 'Home' }} /> */}
-      {/* <Stack.Screen name="auth/sign-in" options={{ title: 'Sign In' }} /> */}
-    </Stack>
+    <Stack>
+    <Stack.Screen name="index" options={{ title: 'Home' }} />
+    <Stack.Screen name="conversation/setup" options={{ title: 'Setup Conversation' }} />
+    <Stack.Screen name="history" options={{ title: 'History' }} />
+  </Stack>
   );
 }
