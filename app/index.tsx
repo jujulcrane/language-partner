@@ -7,12 +7,24 @@ const Home = () => {
   return (
     <View>
       <AppButton
+        title="Profile"
+        onPress={() => router.push('/(dashboard)/profile')}
+      />
+      <AppButton
         title="Start Conversation"
         onPress={() => router.push('/conversation/setup')}
       />
       <AppButton
         title="View History"
-        onPress={() => router.push('/history')}
+        onPress={() => router.push('/(dashboard)/history')}
+      />
+      <AppButton
+        title="Sign In"
+        onPress={() => router.push('/auth/sign-in')}
+      />
+      <AppButton
+        title="Sign Up"
+        onPress={() => router.push('/auth/sign-up')}
       />
     </View>
   )

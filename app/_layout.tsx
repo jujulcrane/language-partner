@@ -1,7 +1,6 @@
 import { Stack } from 'expo-router';
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import Navbar from '../components/Navbar';
 
 export default function RootLayout() {
   return (
@@ -22,8 +21,8 @@ export default function RootLayout() {
         <Stack.Screen name="profile/index" options={{ title: 'Profile' }} />
         <Stack.Screen name="auth/sign-in" options={{ title: 'Sign In' }} />
         <Stack.Screen name="auth/sign-up" options={{ title: 'Sign Up' }} />
+        <Stack.Screen name="(dashboard)" options={{ title: 'Sign Up', headerShown: false }} />
       </Stack>
-      <Navbar />
     </View>
   );
 }
