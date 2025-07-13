@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react';
 import { router } from 'expo-router';
-import AppButton from '../components/AppButton';
+import AppButton from '../components/ThemedButton';
 
 const Home = () => {
   return (
