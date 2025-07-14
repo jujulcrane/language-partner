@@ -1,16 +1,36 @@
 #include <Arduino.h>
-#include "microphone.h"
+#include "wifi_audio.h"
+#include "i2s_audio.h"
 
 void setup()
 {
-  // put your setup code here, to run once:
   Serial.begin(115200);
   delay(100);
-  mic_setup();
+  initWiFi();
+  Serial.println("WiFi setup complete");
+  delay(1000);
+
+  i2s_init_buffers(); // <-- Add this line to allocate buffers
+
+  i2s_install();
+  i2s_setpin();
+  i2s_start(I2S_PORT);
+  Serial.println("Microphone setup complete");
+  chunkIndex = 0;
+  Serial.println("Entering main loop - streaming audio to server...");
+
+  if (psramFound())
+  {
+    Serial.println("PSRAM found and enabled");
+  }
+  else
+  {
+    Serial.println("PSRAM not found");
+  }
 }
 
 void loop()
 {
-  mic_read_and_print();
-  delay(100); // Adjust as needed
+  readAndBufferAudio();
+  delayMicroseconds(100);
 }
