@@ -5,23 +5,14 @@ import { View, StyleSheet } from 'react-native';
 export default function RootLayout() {
   return (
     <View style={styles.container}>
-      <Stack
-        screenOptions={{
-          headerShown: true,
-          headerStyle: { backgroundColor: '#fff' },
-          headerTintColor: '#007AFF',
-          headerTitleStyle: { fontWeight: 'bold' },
-          contentStyle: { flex: 1 },
-        }}
-      >
-        <Stack.Screen name="index" options={{ title: 'Home' }} />
-        <Stack.Screen name="conversation/index" options={{ title: 'Conversation' }} />
-        <Stack.Screen name="conversation/setup" options={{ title: 'Set Up Conversation' }} />
-        <Stack.Screen name="history/index" options={{ title: 'History' }} />
-        <Stack.Screen name="profile/index" options={{ title: 'Profile' }} />
-        <Stack.Screen name="auth/sign-in" options={{ title: 'Sign In' }} />
-        <Stack.Screen name="auth/sign-up" options={{ title: 'Sign Up' }} />
-        <Stack.Screen name="(dashboard)" options={{ title: 'Sign Up', headerShown: false }} />
+      <Stack>
+        {/* Tabs as the root screen */}
+        <Stack.Screen name="(dashboard)" options={{ headerShown: false }} />
+        {/* Stack-only screens (not in Tabs) */}
+        <Stack.Screen
+          name="conversation/new-recording"
+          options={{ title: 'New Recording', presentation: 'modal' }}
+        />
       </Stack>
     </View>
   );
