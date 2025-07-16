@@ -54,6 +54,7 @@ const ConversationHome = () => {
       router.push(`/conversation/new-recording?uri=${encodeURIComponent(uri)}`);
     }
   }
+  //app/(dashboard)/conversation/new-recording.tsx
 
   return (
     <ThemedView style={{ flex: 1 }}>
