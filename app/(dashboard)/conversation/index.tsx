@@ -59,10 +59,7 @@ const ConversationHome = () => {
 
   return (
     <ThemedView style={{ flex: 1 }}>
-      <ThemedText title={true}>Conversation Home Page</ThemedText>
-      <View style={{ flex: 1 }}>
-        <Talk />
-      </View>
+      <Talk />
       <View style={[styles.buttonContainer, { bottom: bottom + 20 }]}>
         <TouchableOpacity onPress={recording ? stopRecording : startRecording} style={[
           styles.recordButton,
