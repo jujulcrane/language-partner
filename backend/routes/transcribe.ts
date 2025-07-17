@@ -14,27 +14,23 @@ if (!API_KEY) throw new Error('Missing OpenAI API Key.');
 
 const openai = new OpenAI({ apiKey: API_KEY });
 
-router.post(
-  '/api/speech-to-text',
-  upload.single('file'),
-  async (req: Request, res: Response) => {
-    try {
-      const audioPath = req.file?.path;
-      if (!audioPath) throw new Error('No audio file uploaded');
+router.post('/api/speech-to-text', upload.single('file'), async (req, res) => {
+  try {
+    console.log('⬅️  Incoming file:', req.file);         
+    if (!req.file?.path) throw new Error('No file');
 
-      const response = await openai.audio.transcriptions.create({
-        file: fs.createReadStream(audioPath),
-        model: 'whisper-1',
-      });
+    const { path: audioPath } = req.file;
+    const response = await openai.audio.transcriptions.create({
+      file: fs.createReadStream(audioPath),
+      model: 'whisper-1',
+    });
 
-      res.json({ text: response.text });
-      // Optional: clean up the uploaded file
-      fs.unlink(audioPath, () => {});
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Failed to transcribe audio' });
-    }
+    res.json({ text: response.text });
+    fs.unlink(audioPath, () => {});
+  } catch (err) {
+    console.error('Transcribe error:', err);
+    res.status(500).json({ error: 'Failed to transcribe' });
   }
-);
+});
 
 export default router;

@@ -6,6 +6,7 @@ import { Audio } from 'expo-av'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons';
+import Talk from '@/components/Talk'
 
 
 const ConversationHome = () => {
@@ -59,6 +60,9 @@ const ConversationHome = () => {
   return (
     <ThemedView style={{ flex: 1 }}>
       <ThemedText title={true}>Conversation Home Page</ThemedText>
+      <View style={{ flex: 1 }}>
+        <Talk />
+      </View>
       <View style={[styles.buttonContainer, { bottom: bottom + 20 }]}>
         <TouchableOpacity onPress={recording ? stopRecording : startRecording} style={[
           styles.recordButton,

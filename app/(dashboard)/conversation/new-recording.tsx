@@ -5,6 +5,8 @@ import ThemedView from '../../../components/ThemedView';
 import ThemedText from '../../../components/ThemedText';
 import { toast } from 'sonner-native';
 import AppButton from '../../../components/ThemedButton';
+import { API_BASE_URL } from '../../../constants/consts';
+
 
 const Page = () => {
   const { uri } = useLocalSearchParams<{ uri?: string }>();
@@ -19,30 +21,32 @@ const Page = () => {
   }, [uri]);
 
   const handleTranscribe = async () => {
+    if (!uri) return;
+
     setIsLoading(true);
-    toast.loading('Transcribing audio...');
+    toast.loading('Transcribing audio…');
 
     try {
       const formData = new FormData();
-      const audioData = {
-        uri: uri,
-        name: 'audio.m4a',
-        type: 'audio/m4a',
-      };
-      formData.append('file', audioData as unknown as Blob);
+      formData.append('file', {
+        uri,                       // keep the file:// prefix
+        name: 'recording.m4a',
+        type: 'audio/m4a',         // iOS: 'audio/m4a', Android: 'audio/x-m4a'
+      } as any);
 
-      //double check url
-      const response = await fetch('http://192.168.8.170:3000/api/speech-to-text', {
+      const response = await fetch(`${API_BASE_URL}/api/speech-to-text`, {
         method: 'POST',
+        headers: {                 // let RN set the boundary for you
+          'Content-Type': 'multipart/form-data',
+        },
         body: formData,
-      }).then((res) => res.json());
-      console.log('Transcription response:', response);
+      });
 
-      setTranscription(response.text);
-    }
-    catch (error) {
-      console.error('Error transcribing audio:', error);
-      toast.error('Failed to transcribe audio');
+      const json = await response.json();
+      setTranscription(json.text ?? '');
+    } catch (err) {
+      console.error('Transcribe failed', err);
+      toast.error('Failed to transcribe');
     } finally {
       setIsLoading(false);
       toast.dismiss();
