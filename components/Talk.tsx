@@ -1,6 +1,7 @@
 /* Talk.tsx – chat with language partner */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import * as Speech from 'expo-speech';
 import {
   ActivityIndicator,
   Button,
@@ -33,7 +34,24 @@ const Talk: React.FC<TalkProps> = ({ initialSpeech = '' }) => {
   const theme = Colors[scheme ?? 'light'];
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  /* ─── network call ──────────────────────────────────────── */
+  useEffect(() => {
+    if (partner) {
+      Speech.stop();
+      Speech.speak(partner, {
+        language: 'ja-JP',
+        pitch: 1.0,
+        rate: 1.0,
+      });
+    }
+  }, [partner]);
+
+  const repeatFeedback = (text: string | null) => {
+    if (text) {
+      Speech.stop();
+      Speech.speak(text, { language: 'ja-JP', pitch: 1.0, rate: 1.0 });
+    }
+  };
+
   const sendSpeech = async () => {
     if (!speech.trim()) return;
 
@@ -61,7 +79,6 @@ const Talk: React.FC<TalkProps> = ({ initialSpeech = '' }) => {
     }
   };
 
-  /* ─── UI ────────────────────────────────────────────────── */
   return (
     <ThemedView style={styles.root}>
       <KeyboardAvoidingView
@@ -77,6 +94,9 @@ const Talk: React.FC<TalkProps> = ({ initialSpeech = '' }) => {
             <>
               <ThemedText style={styles.label}>Partner:</ThemedText>
               <ThemedText style={styles.bubble}>{partner}</ThemedText>
+              <ThemedView style={{ marginTop: 8, alignSelf: 'flex-start' }}>
+                <Button title="🔊 Repeat" onPress={() => repeatFeedback(partner)} color={Colors.primary} />
+              </ThemedView>
             </>
           )}
 
@@ -84,7 +104,11 @@ const Talk: React.FC<TalkProps> = ({ initialSpeech = '' }) => {
             <>
               <ThemedText style={styles.label}>Feedback:</ThemedText>
               <ThemedText style={styles.feedback}>{feedback}</ThemedText>
+              <ThemedView style={{ marginTop: 8, alignSelf: 'flex-start' }}>
+                <Button title="🔊 Listen" onPress={() => repeatFeedback(feedback)} color={Colors.primary} />
+              </ThemedView>
             </>
+
           )}
 
           <TextInput
@@ -109,9 +133,6 @@ const Talk: React.FC<TalkProps> = ({ initialSpeech = '' }) => {
 
 export default Talk;
 
-/* ───────────────────────────────────────────────────────────── */
-/*  helper to build a StyleSheet from the current theme          */
-/* ───────────────────────────────────────────────────────────── */
 const createStyles = (theme: typeof Colors.light | typeof Colors.dark) =>
   StyleSheet.create({
     root: {

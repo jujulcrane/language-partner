@@ -1,7 +1,6 @@
 import { Alert, StyleSheet, Text, Touchable, TouchableOpacity, View } from 'react-native'
 import React from 'react'
 import ThemedView from '../../../components/ThemedView'
-import ThemedText from '../../../components/ThemedText'
 import { Audio } from 'expo-av'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -55,7 +54,6 @@ const ConversationHome = () => {
       router.push(`/conversation/new-recording?uri=${encodeURIComponent(uri)}`);
     }
   }
-  //app/(dashboard)/conversation/new-recording.tsx
 
   return (
     <ThemedView style={{ flex: 1 }}>
