@@ -32,11 +32,8 @@ const Page = () => {
       formData.append('file', audioData as unknown as Blob);
 
       //double check url
-      const response = await fetch('/api/speech-to-text', {
+      const response = await fetch('http://192.168.8.170:3000/api/speech-to-text', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
         body: formData,
       }).then((res) => res.json());
       console.log('Transcription response:', response);
