@@ -6,12 +6,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons';
 import Talk from '@/components/Talk'
+import LevelGrammarSelector from '@/components/LevelGrammarSelector'
 
 
 const ConversationHome = () => {
 
   const { bottom } = useSafeAreaInsets();
   const [recording, setRecording] = React.useState<Audio.Recording | undefined>(undefined);
+  const [jlptLevel, setJlptLevel] = React.useState('');
+  const [grammarPrompt, setGrammarPrompt] = React.useState('');
+
   const router = useRouter();
   const startRecording = async () => {
     try {
@@ -57,6 +61,12 @@ const ConversationHome = () => {
 
   return (
     <ThemedView style={{ flex: 1 }}>
+      <LevelGrammarSelector
+        selectedLevel={jlptLevel}
+        setSelectedLevel={setJlptLevel}
+        grammarPrompt={grammarPrompt}
+        setGrammarPrompt={setGrammarPrompt}
+      />
       <Talk />
       <View style={[styles.buttonContainer, { bottom: bottom + 20 }]}>
         <TouchableOpacity onPress={recording ? stopRecording : startRecording} style={[
