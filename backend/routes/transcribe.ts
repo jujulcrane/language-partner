@@ -1,35 +1,43 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
 import multer from 'multer';
-import { OpenAI } from 'openai';
-import dotenv from 'dotenv';
+import OpenAI from 'openai';
 import fs from 'fs';
-
-dotenv.config();
+import dotenv from 'dotenv';
+import path from 'path';
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
 
-const API_KEY = process.env.OPENAI_API_KEY;
 
-if (!API_KEY) throw new Error('Missing OpenAI API Key.');
+dotenv.config();
 
-const openai = new OpenAI({ apiKey: API_KEY });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// POST /api/speech-to-text
 router.post('/api/speech-to-text', upload.single('file'), async (req, res) => {
   try {
-    console.log('⬅️  Incoming file:', req.file);         
-    if (!req.file?.path) throw new Error('No file');
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    console.log('Upload received:', req.file);
 
-    const { path: audioPath } = req.file;
+    // figure out extension ('m4a' from originalna.me)
+    const ext = path.extname(req.file.originalname) || '.m4a';
+    const tempPathWithExt = req.file.path + ext;
+    
+    // Rename file to include extension, so OpenAI sees it as correct
+    fs.renameSync(req.file.path, tempPathWithExt);
+
     const response = await openai.audio.transcriptions.create({
-      file: fs.createReadStream(audioPath),
+      file: fs.createReadStream(tempPathWithExt),
       model: 'whisper-1',
     });
 
-    res.json({ text: response.text });
-    fs.unlink(audioPath, () => {});
-  } catch (err) {
-    console.error('Transcribe error:', err);
-    res.status(500).json({ error: 'Failed to transcribe' });
+    fs.unlinkSync(tempPathWithExt); // Clean up
+
+    return res.json({ text: response.text });
+  } catch (error) {
+    console.error('POST /api/speech-to-text error:', error);
+    return res.status(500).json({ error: 'Failed to transcribe audio' });
   }
 });
 

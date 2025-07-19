@@ -4,8 +4,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import ThemedView from '../../../components/ThemedView';
 import ThemedText from '../../../components/ThemedText';
 import { toast } from 'sonner-native';
+import * as FileSystem from 'expo-file-system';
 import AppButton from '../../../components/ThemedButton';
-import { API_BASE_URL } from '../../../constants/consts';
+import { API_BASE_URL } from '@/constants/consts';
 
 
 const Page = () => {
@@ -21,38 +22,34 @@ const Page = () => {
   }, [uri]);
 
   const handleTranscribe = async () => {
-    if (!uri) return;
-
     setIsLoading(true);
-    toast.loading('Transcribing audio…');
-
     try {
+      // (optional) get file info for debugging
+      const info = await FileSystem.getInfoAsync(uri!);
+      console.log('File info:', info);
+
       const formData = new FormData();
       formData.append('file', {
-        uri,                       // keep the file:// prefix
-        name: 'recording.m4a',
-        type: 'audio/m4a',         // iOS: 'audio/m4a', Android: 'audio/x-m4a'
+        uri: uri!,
+        name: 'audio.m4a',
+        type: 'audio/m4a', // or 'audio/x-m4a'
       } as any);
 
       const response = await fetch(`${API_BASE_URL}/api/speech-to-text`, {
         method: 'POST',
-        headers: {                 // let RN set the boundary for you
-          'Content-Type': 'multipart/form-data',
-        },
         body: formData,
+        // DO NOT manually set headers!
       });
 
-      const json = await response.json();
-      setTranscription(json.text ?? '');
+      const data = await response.json();
+      setTranscription(data.text || (data.error ? data.error : 'No transcription available'));
     } catch (err) {
-      console.error('Transcribe failed', err);
-      toast.error('Failed to transcribe');
+      console.error('Transcription error:', err);
+      setTranscription('Failed to transcribe audio!');
     } finally {
       setIsLoading(false);
-      toast.dismiss();
     }
   };
-
 
   console.log('URI:', uri);
 
