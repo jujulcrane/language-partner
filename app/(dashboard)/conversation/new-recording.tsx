@@ -24,7 +24,7 @@ const Page = () => {
   const handleTranscribe = async () => {
     setIsLoading(true);
     try {
-      // (optional) get file info for debugging
+      // get file info for debugging
       const info = await FileSystem.getInfoAsync(uri!);
       console.log('File info:', info);
 
@@ -32,13 +32,12 @@ const Page = () => {
       formData.append('file', {
         uri: uri!,
         name: 'audio.m4a',
-        type: 'audio/m4a', // or 'audio/x-m4a'
+        type: 'audio/m4a',
       } as any);
 
       const response = await fetch(`${API_BASE_URL}/api/speech-to-text`, {
         method: 'POST',
         body: formData,
-        // DO NOT manually set headers!
       });
 
       const data = await response.json();

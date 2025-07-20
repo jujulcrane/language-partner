@@ -30,6 +30,7 @@ router.post('/api/speech-to-text', upload.single('file'), async (req, res) => {
     const response = await openai.audio.transcriptions.create({
       file: fs.createReadStream(tempPathWithExt),
       model: 'whisper-1',
+      language: 'ja',
     });
 
     fs.unlinkSync(tempPathWithExt); // Clean up

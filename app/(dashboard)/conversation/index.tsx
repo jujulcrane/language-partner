@@ -1,4 +1,4 @@
-import { Alert, StyleSheet, Text, Touchable, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Alert, StyleSheet, Text, Touchable, TouchableOpacity, View } from 'react-native'
 import React from 'react'
 import ThemedView from '../../../components/ThemedView'
 import { Audio } from 'expo-av'
@@ -7,14 +7,23 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons';
 import Talk from '@/components/Talk'
 import LevelGrammarSelector from '@/components/LevelGrammarSelector'
+import * as FileSystem from 'expo-file-system';
+import { API_BASE_URL } from '@/constants/consts';
 
 
 const ConversationHome = () => {
 
   const { bottom } = useSafeAreaInsets();
-  const [recording, setRecording] = React.useState<Audio.Recording | undefined>(undefined);
+  // States for selection
+
   const [jlptLevel, setJlptLevel] = React.useState('');
   const [grammarPrompt, setGrammarPrompt] = React.useState('');
+
+  //chat logic states
+  const [inputText, setInputText] = React.useState(''); //typed or transcribed
+
+  const [recording, setRecording] = React.useState<Audio.Recording | undefined>(undefined);
+  const [isTranscribing, setIsTranscribing] = React.useState(false);
 
   const router = useRouter();
   const startRecording = async () => {
@@ -55,9 +64,42 @@ const ConversationHome = () => {
     setRecording(undefined);
 
     if (uri) {
-      router.push(`/conversation/new-recording?uri=${encodeURIComponent(uri)}`);
+      await handleTranscribe(uri);
     }
-  }
+  };
+
+  const handleTranscribe = async (uri: string) => {
+    setIsTranscribing(true);
+    try {
+      // get file info for debugging
+      const info = await FileSystem.getInfoAsync(uri);
+      console.log('File info:', info);
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri: uri,
+        name: 'audio.m4a',
+        type: 'audio/m4a',
+      } as any);
+
+      const response = await fetch(`${API_BASE_URL}/api/speech-to-text`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (data.error) {
+        Alert.alert('Transcription Error', data.error);
+      } else {
+        setInputText(data.text || 'No transcription available');
+      }
+    } catch (err) {
+      console.error('Transcription error:', err);
+      Alert.alert('Transcription Error', 'Failed to transcribe audio!');
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
 
   return (
     <ThemedView style={{ flex: 1 }}>
@@ -67,14 +109,23 @@ const ConversationHome = () => {
         grammarPrompt={grammarPrompt}
         setGrammarPrompt={setGrammarPrompt}
       />
-      <Talk />
+      <Talk
+        inputText={inputText}
+        setInputText={setInputText}
+        //jlptLevel={jlptLevel}
+        //grammarPrompt={grammarPrompt}
+        disabled={isTranscribing}
+      />
+      {/* Mic button char bar */}
       <View style={[styles.buttonContainer, { bottom: bottom + 20 }]}>
         <TouchableOpacity onPress={recording ? stopRecording : startRecording} style={[
           styles.recordButton,
           recording ? styles.recordingButton : styles.notRecordingButton,
-        ]}>
+        ]}
+          disabled={isTranscribing}>
           <Ionicons name={recording ? 'stop-circle' : 'mic-circle'} size={24} color="white" />
         </TouchableOpacity>
+        {isTranscribing && <ActivityIndicator style={{ marginLeft: 16 }} />}
       </View>
     </ThemedView >
   )

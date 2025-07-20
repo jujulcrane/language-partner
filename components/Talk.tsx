@@ -19,17 +19,19 @@ import { Colors } from '@/constants/Colors';
 import { API_BASE_URL } from '@/constants/consts';
 
 interface TalkProps {
-  initialSpeech?: string;
+  inputText: string;
+  setInputText: (text: string) => void;
+  jlptLevel?: string;
+  grammarPrompt?: string;
+  disabled?: boolean;
 }
 
-const Talk: React.FC<TalkProps> = ({ initialSpeech = '' }) => {
-  /* ─── state ─────────────────────────────────────────────── */
-  const [speech, setSpeech] = useState(initialSpeech);
+const Talk: React.FC<TalkProps> = ({ inputText, setInputText, disabled = false }) => {
+
   const [partner, setPartner] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  /* ─── theme ─────────────────────────────────────────────── */
   const scheme = useColorScheme() as 'light' | 'dark' | null;
   const theme = Colors[scheme ?? 'light'];
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -53,7 +55,7 @@ const Talk: React.FC<TalkProps> = ({ initialSpeech = '' }) => {
   };
 
   const sendSpeech = async () => {
-    if (!speech.trim()) return;
+    if (!inputText.trim()) return;
 
     try {
       setLoading(true);
@@ -63,14 +65,14 @@ const Talk: React.FC<TalkProps> = ({ initialSpeech = '' }) => {
       const res = await fetch(`${API_BASE_URL}/api/generate-response`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ speech }),
+        body: JSON.stringify({ speech: inputText }),
       });
       if (!res.ok) throw new Error('Server error');
 
       const json = (await res.json()) as { response: string; feedback: string };
       setPartner(json.response);
       setFeedback(json.feedback);
-      setSpeech('');
+      setInputText('');
     } catch (e) {
       console.error(e);
       setPartner('⚠️  Failed to get reply');
@@ -113,11 +115,12 @@ const Talk: React.FC<TalkProps> = ({ initialSpeech = '' }) => {
 
           <TextInput
             multiline
-            value={speech}
-            onChangeText={setSpeech}
+            value={inputText}
+            onChangeText={setInputText}
             placeholder="Type Japanese here…"
             placeholderTextColor={theme.iconColor}
             style={styles.input}
+            editable={!loading && !disabled}
           />
 
           {loading ? (
