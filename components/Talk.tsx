@@ -8,12 +8,14 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
+  TouchableOpacity,
   useColorScheme,
   View,
 } from 'react-native';
 import ThemedText from '@/components/ThemedText';
 import ThemedView from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
+import { Ionicons } from '@expo/vector-icons';
 
 interface TalkProps {
   mode: 'text' | 'mic';
@@ -55,14 +57,28 @@ const Talk: React.FC<TalkProps> = ({
             <View>
               <ThemedText style={styles.label}>Partner:</ThemedText>
               <ThemedText style={styles.bubble}>{partner}</ThemedText>
-              <Button title="🔊 Repeat" onPress={() => repeat(partner)} color={Colors.primary} />
+              <TouchableOpacity
+                onPress={() => repeat(partner)}
+                style={{ padding: 8 }}
+                accessibilityLabel="Repeat"
+                accessibilityRole="button"
+              >
+                <Ionicons name="volume-high" size={26} color={Colors.primary} />
+              </TouchableOpacity>
             </View>
           )}
           {feedback && (
             <View>
               <ThemedText style={styles.label}>Feedback:</ThemedText>
               <ThemedText style={styles.feedback}>{feedback}</ThemedText>
-              <Button title="🔊 Listen" onPress={() => repeat(feedback)} color={Colors.primary} />
+              <TouchableOpacity
+                onPress={() => repeat(feedback)}
+                style={{ padding: 8 }}
+                accessibilityLabel="Repeat"
+                accessibilityRole="button"
+              >
+                <Ionicons name="volume-high" size={26} color={Colors.primary} />
+              </TouchableOpacity>
             </View>
           )}
           {/* Only show text input if mode === 'text' */}

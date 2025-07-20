@@ -1,4 +1,5 @@
 import { Colors } from '@/constants/Colors';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, TextInput } from 'react-native';
 import { useColorScheme } from 'react-native';
@@ -16,6 +17,7 @@ const createStyles = (theme: { text: string; title: string; background: string; 
       elevation: 2,
     },
     label: {
+      padding: 6,
       fontSize: 15,
       fontWeight: 'bold',
       marginBottom: 6,
@@ -98,20 +100,28 @@ const LevelGrammarSelector: React.FC<LevelGrammarSelectorProps> = ({
   const [modalVisible, setModalVisible] = React.useState(false);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>JLPT Level</Text>
-      <TouchableOpacity
-        style={styles.dropdownButton}
-        onPress={() => setModalVisible(true)}
-      >
-        <Text style={styles.dropdownText}>
-          {selectedLevel || 'Select JLPT Level'}
-        </Text>
+    <>
+      {/* Toggle Button */}
+      <TouchableOpacity style={styles.label} onPress={() => setModalVisible(true)}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={styles.label}>Level & Grammar </Text>
+          <Ionicons name={'settings'} size={17} style={{ marginBottom: 1, marginLeft: 3 }} color={styles.label.color} />
+        </View>
+        {selectedLevel ? (
+          <Text style={styles.label}>
+            {selectedLevel}{grammarPrompt ? ` ・ ${grammarPrompt.length > 12 ? grammarPrompt.substring(0, 12) + '…' : grammarPrompt}` : ''}
+          </Text>
+        ) : (
+          <Text style={[styles.optionText, { color: theme.iconColor }]}>
+            (Not set)
+          </Text>
+        )}
       </TouchableOpacity>
-      {/* Modal Dropdown */}
+      {/* Modal Contents */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalBackground}>
           <View style={styles.modalContent}>
+            <Text style={styles.label}>JLPT Level</Text>
             <FlatList
               data={JLPT_LEVELS}
               keyExtractor={(item) => item}
@@ -120,36 +130,32 @@ const LevelGrammarSelector: React.FC<LevelGrammarSelectorProps> = ({
                   style={styles.option}
                   onPress={() => {
                     setSelectedLevel(item);
-                    setModalVisible(false);
                   }}
                 >
                   <Text style={styles.optionText}>{item}</Text>
                 </TouchableOpacity>
               )}
+              extraData={selectedLevel}
             />
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setModalVisible(false)}
-            >
+            <Text style={styles.label}>Grammar Patterns to Practice</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., 〜てしまう、〜ながら、passive forms"
+              value={grammarPrompt}
+              onChangeText={setGrammarPrompt}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              placeholderTextColor={theme.iconColor}
+              autoFocus={false}
+            />
+            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
               <Text style={styles.closeText}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-      <Text style={styles.label}>
-        Grammar Patterns to Practice
-      </Text>
-      <TextInput
-        style={styles.input}
-        placeholder="e.g., 〜てしまう、〜ながら、passive forms"
-        value={grammarPrompt}
-        onChangeText={setGrammarPrompt}
-        multiline
-        numberOfLines={4}
-        textAlignVertical="top"
-        placeholderTextColor={theme.iconColor}
-      />
-    </View>
+    </>
   );
 };
 
