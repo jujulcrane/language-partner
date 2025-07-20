@@ -26,7 +26,7 @@ interface TalkProps {
   disabled?: boolean;
 }
 
-const Talk: React.FC<TalkProps> = ({ inputText, setInputText, disabled = false }) => {
+const Talk: React.FC<TalkProps> = ({ inputText, setInputText, disabled = false, jlptLevel = undefined, grammarPrompt = undefined }) => {
 
   const [partner, setPartner] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -65,7 +65,7 @@ const Talk: React.FC<TalkProps> = ({ inputText, setInputText, disabled = false }
       const res = await fetch(`${API_BASE_URL}/api/generate-response`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ speech: inputText }),
+        body: JSON.stringify({ speech: inputText, jlptLevel, grammarPrompt }),
       });
       if (!res.ok) throw new Error('Server error');
 
