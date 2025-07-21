@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
 import Talk from '@/components/Talk';
-import { Audio } from 'expo-av';
+import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import { Buffer } from 'buffer';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
@@ -15,6 +15,7 @@ type ConversationManagerProps = {
 
 const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined }: ConversationManagerProps) => {
 
+  const soundRef = useRef<Audio.Sound | null>(null);
   const uid = UUID; //PLACE HOLDER FOR USER ID
   const [sessionId, setSessionId] = useState<string | null>(null);
 
@@ -29,28 +30,40 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
   }>({ partner: null, feedback: null });
 
   async function speakWithOpenAI(text: string) {
-    const arrayBuf = await fetchTTS(text);
+    /* stop whatever is already playing */
+    if (soundRef.current) {
+      await soundRef.current.unloadAsync();
+      soundRef.current = null;
+    }
 
-    // turn it into a data-URI so Expo can stream it from RAM
-    const base64 = Buffer.from(arrayBuf).toString('base64');
-    const uri = `data:audio/mp3;base64,${base64}`;
+    /* force “media / speaker” route */
+    await Audio.setAudioModeAsync({
+      playsInSilentModeIOS: true,
+      allowsRecordingIOS: false,
+      interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+      interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+      shouldDuckAndroid: false,
+      playThroughEarpieceAndroid: false,
+      staysActiveInBackground: false,
+    });
 
-    const { sound } = await Audio.Sound.createAsync({ uri });
-    await sound.playAsync();
+    /* fetch & play OpenAI TTS */
+    const buf = await fetchTTS(text);                   // ArrayBuffer
+    const uri = `data:audio/mp3;base64,${Buffer.from(buf).toString('base64')}`;
+    const { sound } = await Audio.Sound.createAsync(
+      { uri },
+      { shouldPlay: true }
+    );
+    soundRef.current = sound;
 
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (!status.isLoaded) {
-        if ('error' in status && status.error) {
-          console.error(`Playback error: ${status.error}`);
-        }
-        return;
-      }
-
-      if (status.didJustFinish) {
+    sound.setOnPlaybackStatusUpdate((st) => {
+      if (st.isLoaded && st.didJustFinish) {
         sound.unloadAsync();
+        soundRef.current = null;
       }
     });
   }
+
 
   // -- Handle recording logic --
   const startRecording = async () => {

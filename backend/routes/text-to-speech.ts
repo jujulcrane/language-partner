@@ -1,5 +1,5 @@
 import express from 'express';
-import fetch from 'node-fetch';                // node >=18 has global fetch
+import fetch from 'node-fetch';               
 import { config } from 'dotenv';
 config();
 
@@ -13,7 +13,7 @@ router.post('/api/text-to-speech', async (req, res) => {
     headers: {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       'Content-Type': 'application/json',
-      Accept: `audio/${format}`,             // tells OpenAI we want raw audio
+      Accept: `audio/${format}`,             
     },
     body: JSON.stringify({
       model: 'gpt-4o-mini-tts',              // or tts-1 / tts-1-hd

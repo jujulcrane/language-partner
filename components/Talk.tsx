@@ -1,5 +1,4 @@
 import React, { useMemo, useEffect } from 'react';
-import * as Speech from 'expo-speech';
 import {
   ActivityIndicator,
   Button,
@@ -35,13 +34,6 @@ const Talk: React.FC<TalkProps> = ({
   const scheme = useColorScheme() as 'light' | 'dark' | null;
   const theme = Colors[scheme ?? 'light'];
   const styles = useMemo(() => createStyles(theme), [theme]);
-
-  useEffect(() => {
-    if (partner) {
-      Speech.stop();
-      Speech.speak(partner, { language: 'ja-JP', pitch: 1.0, rate: 1.0 });
-    }
-  }, [partner]);
 
   return (
     <ThemedView style={styles.root}>

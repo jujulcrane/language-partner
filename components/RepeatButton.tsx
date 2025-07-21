@@ -1,14 +1,17 @@
 import React, { useRef, useEffect } from 'react';
 import { TouchableOpacity, StyleProp, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio, InterruptionModeIOS } from 'expo-av';
+import {
+  Audio,
+  InterruptionModeIOS,
+  InterruptionModeAndroid,
+} from 'expo-av';
 import { Buffer } from 'buffer';
 import { Colors } from '@/constants/Colors';
-import { fetchTTS } from '@/app/api/api';      // ← your helper
+import { fetchTTS } from '@/app/api/api';   // helper → ArrayBuffer
 
 interface RepeatButtonProps {
   text: string | null;
-  /** optional OpenAI voice id */
   voice?: string;
   color?: string;
   size?: number;
@@ -24,7 +27,7 @@ const RepeatButton: React.FC<RepeatButtonProps> = ({
 }) => {
   const soundRef = useRef<Audio.Sound | null>(null);
 
-  // free the sound when the component disappears
+  /* cleanup on unmount */
   useEffect(() => {
     return () => {
       if (soundRef.current) {
@@ -44,25 +47,31 @@ const RepeatButton: React.FC<RepeatButtonProps> = ({
         soundRef.current = null;
       }
 
-      /* speaker-only audio mode */
+      /* Force speaker / media channel */
       await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
         allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
         interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+
+        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+        shouldDuckAndroid: false,
+        playThroughEarpieceAndroid: false,
+        staysActiveInBackground: false,
       });
 
-      /* fetch TTS from your server */
-      const arrayBuf = await fetchTTS(text, voice);      // helper returns ArrayBuffer
-      const base64 = Buffer.from(arrayBuf).toString('base64');
+      /* Fetch OpenAI TTS */
+      const buf = await fetchTTS(text, voice);
+      const base64 = Buffer.from(buf).toString('base64');
       const uri = `data:audio/mp3;base64,${base64}`;
 
-      /* create & play */
+      /* Create & play */
       const { sound } = await Audio.Sound.createAsync(
         { uri },
-        { shouldPlay: true },
+        { shouldPlay: true, volume: 1 },   // volume 1 = full
         (status) => {
           if (!status.isLoaded) {
-            if ('error' in status && status.error) console.error(status.error);
+            if ('error' in status && status.error)
+              console.error('TTS playback error:', status.error);
             return;
           }
           if (status.didJustFinish) {
@@ -78,7 +87,7 @@ const RepeatButton: React.FC<RepeatButtonProps> = ({
     }
   };
 
-  if (!text) return null;          // nothing to say, render nothing
+  if (!text) return null;
 
   return (
     <TouchableOpacity
@@ -86,6 +95,7 @@ const RepeatButton: React.FC<RepeatButtonProps> = ({
       style={[{ padding: 8 }, style]}
       accessibilityRole="button"
       accessibilityLabel="Repeat"
+      activeOpacity={0.7}
     >
       <Ionicons name="volume-high" size={size} color={color} />
     </TouchableOpacity>
