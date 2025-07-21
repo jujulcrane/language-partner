@@ -1,6 +1,7 @@
 import express from 'express';
 import transcribeRouter from './routes/transcribe';
 import generateRouter   from './routes/generate-response';
+import dataRouter from './routes/data';
 import dotenv from 'dotenv';
 import cors from 'cors';
 
@@ -14,5 +15,6 @@ app.get('/ping', (_req, res) => res.send('pong'));
 
 app.use(transcribeRouter);  // /api/speech-to-text
 app.use(generateRouter);    // /api/generate-response
+app.use(dataRouter); // /api/items
 
 app.listen(3000, () => console.log('Server running on port 3000'));
