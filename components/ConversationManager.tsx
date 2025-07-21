@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { View, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
 import Talk from '@/components/Talk';
 import { Audio } from 'expo-av';
+import { Buffer } from 'buffer';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import { API_BASE_URL, UUID } from '@/constants/consts';
-import { addTurn, startSession } from '@/app/api/api';
+import { addTurn, fetchTTS, startSession } from '@/app/api/api';
 
 type ConversationManagerProps = {
   jlptLevel?: string;
@@ -26,6 +27,31 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
     partner: string | null;
     feedback: string | null;
   }>({ partner: null, feedback: null });
+
+  async function speakWithOpenAI(text: string) {
+    const arrayBuf = await fetchTTS(text);
+
+    // turn it into a data-URI so Expo can stream it from RAM
+    const base64 = Buffer.from(arrayBuf).toString('base64');
+    const uri = `data:audio/mp3;base64,${base64}`;
+
+    const { sound } = await Audio.Sound.createAsync({ uri });
+    await sound.playAsync();
+
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (!status.isLoaded) {
+        if ('error' in status && status.error) {
+          console.error(`Playback error: ${status.error}`);
+        }
+        // No error → just the initial “loading” status; ignore.
+        return;
+      }
+
+      if (status.didJustFinish) {         // status is now AVPlaybackStatusSuccess
+        sound.unloadAsync();
+      }
+    });
+  }
 
   // -- Handle recording logic --
   const startRecording = async () => {
@@ -100,6 +126,7 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
       });
 
       setTalkState({ partner: json.response, feedback: json.feedback });
+      speakWithOpenAI(json.response); // speak the response
       setInputText('');
     } catch (e) { }
     setLoading(false);

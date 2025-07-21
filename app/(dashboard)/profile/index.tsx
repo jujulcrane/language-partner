@@ -3,8 +3,7 @@ import React, { useEffect, useState } from 'react';
 import ThemedView from '../../../components/ThemedView';
 import Spacer from '../../../components/Spacer';
 import ThemedText from '../../../components/ThemedText';
-import AppButton from '@/components/ThemedButton';
-import { API_BASE_URL, UUID } from '@/constants/consts';
+import { UUID } from '@/constants/consts';
 import { getName } from '@/app/api/api';
 import { Ionicons } from '@expo/vector-icons';
 
