@@ -4,7 +4,8 @@ import Talk from '@/components/Talk';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
-import { API_BASE_URL } from '@/constants/consts';
+import { API_BASE_URL, UUID } from '@/constants/consts';
+import { addTurn, startSession } from '@/app/api/api';
 
 type ConversationManagerProps = {
   jlptLevel?: string;
@@ -12,10 +13,19 @@ type ConversationManagerProps = {
 };
 
 const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined }: ConversationManagerProps) => {
+
+  const uid = UUID; //PLACE HOLDER FOR USER ID
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
   const [mode, setMode] = useState<'text' | 'mic'>('text');
   const [inputText, setInputText] = useState('');
   const [recording, setRecording] = useState<Audio.Recording | undefined>(undefined);
   const [loading, setLoading] = useState(false);
+
+  const [talkState, setTalkState] = useState<{
+    partner: string | null;
+    feedback: string | null;
+  }>({ partner: null, feedback: null });
 
   // -- Handle recording logic --
   const startRecording = async () => {
@@ -63,14 +73,29 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
       });
       if (!res.ok) throw new Error('Server error');
       const json = await res.json();
-      // Instead of setInputText(''), let Talk handle display
+
+      //ensure firestore session
+      let sid = sessionId;
+      if (!sid) {
+        sid = await startSession(uid, jlptLevel || '', grammarPrompt || '');
+        if (!sid) throw new Error('Failed to start session');
+        setSessionId(sid);
+      }
+
+      //record turn in firestore
+      await addTurn(uid, sid, {
+        userText: speech,
+        partnerReply: json.response,
+        feedback: json.feedback,
+        jlptLevel: jlptLevel || '',
+        grammarPrompt: grammarPrompt || '',
+      });
+
       setTalkState({ partner: json.response, feedback: json.feedback });
+      setInputText('');
     } catch (e) { }
     setLoading(false);
   };
-
-  // For Talk display/output
-  const [talkState, setTalkState] = useState<{ partner: string | null; feedback: string | null }>({ partner: null, feedback: null });
 
   return (
     <View style={{ flex: 1 }}>

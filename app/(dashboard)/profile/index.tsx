@@ -1,16 +1,46 @@
 import { StyleSheet, View } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ThemedView from '../../../components/ThemedView';
 import Spacer from '../../../components/Spacer';
 import ThemedText from '../../../components/ThemedText';
 import AppButton from '@/components/ThemedButton';
-import { API_BASE_URL } from '@/constants/consts';
+import { API_BASE_URL, UUID } from '@/constants/consts';
+import { getName } from '@/app/api/api';
 
 const Profile = () => {
+  const [name, setName] = useState<string>(''); // Placeholder for user name
   const [getResult, setGetResult] = useState<string>('');
   const [postResult, setPostResult] = useState<string>('');
   const [loadingGet, setLoadingGet] = useState(false);
   const [loadingPost, setLoadingPost] = useState(false);
+
+  useEffect(() => {
+    if (!UUID) return;
+
+    let cancelled = false;
+
+    const fetchName = async () => {
+      try {
+        setLoadingGet(true);
+        const userName = await getName(UUID);
+        if (!cancelled) {
+          setName(userName);
+          setLoadingGet(false);
+          setGetResult('');
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to fetch name:', error);
+          setName('Error fetching name');
+          setLoadingGet(false);
+        }
+      }
+    };
+    fetchName();
+
+    return () => { cancelled = true; };
+  }, [UUID]);
+
 
   // Test GET /api/items
   const handleGet = async () => {
@@ -51,9 +81,13 @@ const Profile = () => {
   };
 
   return (
-    <ThemedView style={styles.container} safe={true}>
+    <ThemedView style={styles.container}>
       <Spacer />
-      <ThemedText title={true}>Profile</ThemedText>
+      {loadingGet ? (
+        <ThemedText title={true}>Loading …</ThemedText>
+      ) : (
+        <ThemedText title={true}>{name || 'Unnamed user'}</ThemedText>
+      )}
       <AppButton
         title="Test GET /api/items"
         onPress={handleGet}
