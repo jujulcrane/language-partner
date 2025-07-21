@@ -56,9 +56,17 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
       const response = await fetch(`${API_BASE_URL}/api/speech-to-text`, { method: 'POST', body: formData });
       const data = await response.json();
       const text = data.text || '';
-      // AUTO SEND TO API AS SOON AS STT RETURNS
+
       await sendSpeech(text);
-    } catch (err) { }
+    } catch (err) {
+      console.warn(err);
+    } finally {
+      try {
+        await FileSystem.deleteAsync(uri, { idempotent: true });
+      } catch (e) {
+        console.warn('Failed to delete recording file:', e);
+      }
+    }
   };
 
   // Send input (called on mode text: button click; mode mic: after transcription)
