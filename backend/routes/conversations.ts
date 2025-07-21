@@ -136,4 +136,34 @@ router.get("/api/users/:uid/sessions/:sid/turns", async (req, res) => {
   }
 });
 
+/* ───────────────────────────────────────────────
+   5)  DELETE a session (and its turns)
+   DELETE /api/users/:uid/sessions/:sid
+───────────────────────────────────────────────── */
+router.delete("/api/users/:uid/sessions/:sid", async (req, res) => {
+  try {
+    const { uid, sid } = req.params;
+
+    const sessionRef = db
+      .collection("users")
+      .doc(uid)
+      .collection("sessions")
+      .doc(sid);
+
+    // 1 delete every turn under the session
+    const turnsSnap = await sessionRef.collection("turns").get();
+    const batch = db.batch();
+    turnsSnap.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+
+    // 2 delete the session document itself
+    await sessionRef.delete();
+
+    res.status(204).send();   // no-content success
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+
 export default router;

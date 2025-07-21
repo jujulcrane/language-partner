@@ -16,6 +16,7 @@ import ThemedText from '@/components/ThemedText';
 import ThemedView from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
+import RepeatButton from './RepeatButton';
 
 interface TalkProps {
   mode: 'text' | 'mic';
@@ -42,10 +43,6 @@ const Talk: React.FC<TalkProps> = ({
     }
   }, [partner]);
 
-  const repeat = (t: string | null) => {
-    if (t) Speech.speak(t, { language: 'ja-JP', pitch: 1.0, rate: 1.0 });
-  };
-
   return (
     <ThemedView style={styles.root}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ ios: 'padding' })} >
@@ -57,28 +54,14 @@ const Talk: React.FC<TalkProps> = ({
             <View>
               <ThemedText style={styles.label}>Partner:</ThemedText>
               <ThemedText style={styles.bubble}>{partner}</ThemedText>
-              <TouchableOpacity
-                onPress={() => repeat(partner)}
-                style={{ padding: 8 }}
-                accessibilityLabel="Repeat"
-                accessibilityRole="button"
-              >
-                <Ionicons name="volume-high" size={26} color={Colors.primary} />
-              </TouchableOpacity>
+              <RepeatButton text={partner} />
             </View>
           )}
           {feedback && (
             <View>
               <ThemedText style={styles.label}>Feedback:</ThemedText>
               <ThemedText style={styles.feedback}>{feedback}</ThemedText>
-              <TouchableOpacity
-                onPress={() => repeat(feedback)}
-                style={{ padding: 8 }}
-                accessibilityLabel="Repeat"
-                accessibilityRole="button"
-              >
-                <Ionicons name="volume-high" size={26} color={Colors.primary} />
-              </TouchableOpacity>
+              <RepeatButton text={feedback} />
             </View>
           )}
           {/* Only show text input if mode === 'text' */}

@@ -62,3 +62,10 @@ export const getTurns = async (uid: string, sessionId: string) => {
   );
   return (await res.json()) as any[];
 };
+
+export const deleteSession = async (uid: string, sessionId: string) => {
+  await fetch(`${API_BASE_URL}/api/users/${uid}/sessions/${sessionId}`, {
+    method: 'DELETE',
+  });
+};
+

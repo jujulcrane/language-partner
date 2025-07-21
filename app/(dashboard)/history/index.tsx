@@ -8,12 +8,15 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useColorScheme,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { getSessions, getTurns } from '@/app/api/api';
+import { getSessions, getTurns, deleteSession } from '@/app/api/api';
 import { UUID } from '@/constants/consts';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from 'react-native/Libraries/NewAppScreen';
+import RepeatButton from '@/components/RepeatButton';
 
-// enable smooth accordion animation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
@@ -23,7 +26,6 @@ type Session = {
   jlptLevel: string;
   grammarPrompt: string;
   lastTurnAt: { _seconds: number };
-  // local UI state
   expanded?: boolean;
   turns?: Turn[];
   loadingTurns?: boolean;
@@ -39,53 +41,38 @@ type Turn = {
 const History = () => {
   const uid = UUID;
   const [sessions, setSessions] = useState<Session[]>([]);
+  const scheme = useColorScheme() as 'light' | 'dark' | null;
+  const theme = Colors[scheme ?? 'light'];
 
-  /* ───────────── fetch session list ───────────── */
+  /* ─ fetch sessions once ─ */
   useEffect(() => {
     if (!uid) return;
     getSessions(uid)
-      .then((raw) => {
-        // attach UI flags
-        setSessions(raw.map((s) => ({ ...s, expanded: false })));
-      })
+      .then((raw) => setSessions(raw.map((s) => ({ ...s, expanded: false }))))
       .catch(console.error);
   }, [uid]);
 
-  /* ───────────── expand / collapse ───────────── */
+  /* ─ expand / collapse ─ */
   const toggle = (sid: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSessions(prev =>
+      prev.map(sess =>
+        sess.id === sid
+          ? { ...sess, expanded: !sess.expanded, loadingTurns: !sess.turns && !sess.expanded }
+          : sess
+      )
+    );
 
-    setSessions(prev => {
-      // map by id instead of relying on array index
-      return prev.map(sess => {
-        if (sess.id !== sid) return sess;                 // untouched rows
-
-        // flip expanded
-        const willExpand = !sess.expanded;
-
-        // if we already have the turns, just expand/collapse – no loading flag
-        if (sess.turns) {
-          return { ...sess, expanded: willExpand };
-        }
-
-        // first time we open → mark as loading, keep collapsed state in sync
-        return { ...sess, expanded: willExpand, loadingTurns: willExpand };
-      });
-    });
-
-    // fetch only if we never cached this session
+    // lazy-load turns
     const target = sessions.find(s => s.id === sid);
     if (target?.turns || target?.loadingTurns) return;
 
     (async () => {
       try {
         const turns = await getTurns(uid, sid);
-
         setSessions(prev =>
           prev.map(sess =>
-            sess.id === sid
-              ? { ...sess, turns, loadingTurns: false }
-              : sess
+            sess.id === sid ? { ...sess, turns, loadingTurns: false } : sess
           )
         );
       } catch (e) {
@@ -99,30 +86,86 @@ const History = () => {
     })();
   };
 
-  /* ───────────── render ───────────── */
+  /* ─ delete ─ */
+  const onDelete = async (sid: string) => {
+    try {
+      await deleteSession(uid, sid);
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setSessions(prev => prev.filter(s => s.id !== sid));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const renderTurn = (t: Turn) => (
-    <View key={t.id} style={styles.turnRow}>
-      <Text style={styles.user}>You: {t.userText}</Text>
-      <Text style={styles.partner}>Partner: {t.partnerReply}</Text>
-      {t.feedback ? <Text style={styles.feedback}>Feedback: {t.feedback}</Text> : null}
+    <View key={t.id} style={styles.turnContainer}>
+
+      {/* user line ---------------------------------------------------- */}
+      <View style={styles.line}>
+        <Text style={[styles.text, styles.user]}>
+          You: {t.userText}
+        </Text>
+        <RepeatButton
+          text={t.userText}
+          size={18}
+          style={styles.repeatBtn}
+        />
+      </View>
+
+      {/* partner line ------------------------------------------------- */}
+      <View style={styles.line}>
+        <Text style={[styles.text, styles.partner]}>
+          Partner: {t.partnerReply}
+        </Text>
+        <RepeatButton
+          text={t.partnerReply}
+          size={18}
+          style={styles.repeatBtn}
+        />
+      </View>
+
+      {/* optional feedback ------------------------------------------- */}
+      {t.feedback ? (
+        <View style={styles.line}>
+          <Text style={[styles.text, styles.feedback]}>
+            Feedback: {t.feedback}
+          </Text>
+          <RepeatButton
+            text={t.feedback}
+            size={18}
+            style={styles.repeatBtn}
+          />
+        </View>
+      ) : null}
+
     </View>
   );
 
-  const renderItem = ({ item, index }: { item: Session; index: number }) => (
+  const renderItem = ({ item }: { item: Session }) => (
     <View>
       {/* header */}
-      <TouchableOpacity style={styles.card} onPress={() => toggle(item.id)}>
-        <Text style={styles.title}>{item.grammarPrompt}</Text>
-        <Text>
-          {item.jlptLevel} •{' '}
-          {new Date(item.lastTurnAt._seconds * 1000).toLocaleString()}
-        </Text>
-      </TouchableOpacity>
+      <View style={styles.card}>
+        <TouchableOpacity
+          style={{ flex: 1 }}
+          onPress={() => toggle(item.id)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.title}>{item.grammarPrompt}</Text>
+          <Text>
+            {item.jlptLevel} • {new Date(item.lastTurnAt._seconds * 1000).toLocaleString()}
+          </Text>
+        </TouchableOpacity>
+
+        {/* trash icon */}
+        <TouchableOpacity onPress={() => onDelete(item.id)}>
+          <Ionicons name="trash" size={20} color={Colors.warning} />
+        </TouchableOpacity>
+      </View>
 
       {/* body */}
       {item.expanded && (
         <View style={styles.body}>
-          {item.loadingTurns && <ActivityIndicator />}
+          {item.loadingTurns && !item.turns && <ActivityIndicator />}
           {!item.loadingTurns && item.turns?.map(renderTurn)}
         </View>
       )}
@@ -147,16 +190,42 @@ export default History;
 const styles = StyleSheet.create({
   root: { flex: 1, paddingHorizontal: 16 },
   card: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 12,
     borderBottomWidth: 1,
     borderColor: '#ddd',
     backgroundColor: '#fafafa',
   },
   title: { fontWeight: 'bold', marginBottom: 4 },
-  body: { padding: 12, backgroundColor: '#fff' },
+  body: { padding: 12, backgroundColor: '#fafafa' },
 
   turnRow: { marginBottom: 12 },
   user: { fontWeight: '600' },
   partner: { marginTop: 4 },
-  feedback: { marginTop: 4, fontStyle: 'italic', color: '#a66' },
+  feedback: { marginTop: 4, fontStyle: 'italic', color: Colors.primary },
+
+  turnContainer: {
+    marginVertical: 8,
+  },
+
+  /* one horizontal row */
+  line: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+
+  /* text stretches; pushes icon to the far right */
+  text: {
+    flex: 1,
+    fontSize: 16,
+  },
+
+  /* make the repeat button compact */
+  repeatBtn: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    marginLeft: 6,
+  },
 });

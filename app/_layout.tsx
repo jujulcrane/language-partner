@@ -1,27 +1,36 @@
-import { Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router';
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+// app/_layout.tsx   (or whatever your outer-most layout file is)
+import { Stack } from 'expo-router';
+import React, { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { StyleSheet } from 'react-native';
 import { Toaster } from 'sonner-native';
+import { Audio, InterruptionModeIOS } from 'expo-av';
 
 export default function RootLayout() {
-  const router = useRouter();
+  /* configure audio once when the app starts */
+  useEffect(() => {
+    Audio.setAudioModeAsync({
+      playsInSilentModeIOS: true,
+      allowsRecordingIOS: false,
+      interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+      playThroughEarpieceAndroid: false,
+    }).catch(console.warn);
+  }, []);
+
   return (
     <GestureHandlerRootView style={styles.container}>
       <Toaster />
-      <Stack>
-        {/* Tabs as the root screen */}
-        <Stack.Screen name="(dashboard)" options={{ headerShown: false }} />
-        {/* Stack-only screens (not in Tabs) */}
+
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: '#fff' },
+        }}
+      >
+        <Stack.Screen name="(dashboard)" />
         <Stack.Screen
           name="(dashboard)/conversation/new-recording"
-          options={{
-            title: 'New Recording', presentation: 'modal',
-            headerLeft: () => {
-              return <Ionicons name="close" size={24} color="#FFC107" onPress={() => router.back()} />
-            }
-          }}
+          options={{ presentation: 'modal' }}
         />
       </Stack>
     </GestureHandlerRootView>
