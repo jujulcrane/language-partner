@@ -43,11 +43,10 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
         if ('error' in status && status.error) {
           console.error(`Playback error: ${status.error}`);
         }
-        // No error → just the initial “loading” status; ignore.
         return;
       }
 
-      if (status.didJustFinish) {         // status is now AVPlaybackStatusSuccess
+      if (status.didJustFinish) {
         sound.unloadAsync();
       }
     });

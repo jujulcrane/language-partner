@@ -69,12 +69,20 @@ export const deleteSession = async (uid: string, sessionId: string) => {
   });
 };
 
-export const fetchTTS = async (sentence: string) => {
+export const fetchTTS = async (
+  sentence: string,
+  voice: string = 'coral',      // ← default
+  format: 'mp3' | 'wav' | 'ogg' = 'mp3'
+) => {
   const res = await fetch(`${API_BASE_URL}/api/text-to-speech`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: sentence, voice: 'coral' }), // pick a voice
+    body: JSON.stringify({ text: sentence, voice, format }),
   });
-  return res.arrayBuffer();          // binary audio
+
+  if (!res.ok) {
+    throw new Error(`TTS request failed: ${res.status}`);
+  }
+  return res.arrayBuffer();
 };
 
