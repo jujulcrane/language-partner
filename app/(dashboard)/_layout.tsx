@@ -1,22 +1,42 @@
-import { Ionicons } from '@expo/vector-icons';
-import { router, Tabs } from 'expo-router';
 import React from 'react';
+import { Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import { Pressable } from 'react-native';
+import { Tabs, router } from 'expo-router';
+import * as Updates from 'expo-updates';      // ← add
 
 export default function TabsLayout() {
+  /* helper */
+  const hardReload = async () => {
+    try {
+      await Updates.reloadAsync();            // full JS reload
+    } catch (e) {
+      console.warn('Could not reload app', e);
+    }
+  };
+
   return (
     <Tabs
       screenOptions={{
         headerTitleStyle: { fontWeight: 'bold' },
         tabBarActiveTintColor: '#FFC107',
         tabBarInactiveTintColor: '#888',
-        tabBarStyle: {
-          paddingTop: 10,
-          height: 90,
-        },
-        headerShown: true,
+        tabBarStyle: { paddingTop: 10, height: 90 },
+
+        /* ───── header buttons ───── */
+        headerLeft: () => (
+          <Pressable
+            onPress={hardReload}
+            style={({ pressed }) => ({
+              marginLeft: 16,
+              opacity: pressed ? 0.5 : 1,
+            })}
+            accessibilityLabel="Reload app"
+          >
+            <Ionicons name="reload" size={24} color="#FFC107" />
+          </Pressable>
+        ),
         headerRight: () => (
           <Pressable
             onPress={() => router.push('/')}
@@ -31,6 +51,7 @@ export default function TabsLayout() {
         ),
       }}
     >
+      {/* your tabs */}
       <Tabs.Screen
         name="conversation/setup"
         options={{
@@ -51,7 +72,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ focused }) => (
             <MaterialCommunityIcons
               size={24}
-              name={'teddy-bear'}
+              name="teddy-bear"
               color={focused ? '#FFC107' : '#888'}
             />
           ),
