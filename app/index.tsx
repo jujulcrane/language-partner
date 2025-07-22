@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import React from 'react';
 import { router } from 'expo-router';
 import AppButton from '@/components/ThemedButton';
@@ -6,6 +6,11 @@ import AppButton from '@/components/ThemedButton';
 const Home = () => (
   <View style={styles.root}>
     {/* main CTA */}
+    <Image
+      source={require('../assets/TalkingTanuki.png')}
+      style={styles.image}
+      resizeMode="contain"
+    />
     <AppButton
       title="Start Conversation"
       onPress={() => router.push('/conversation/setup')}
@@ -34,6 +39,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   startBtn: {
+    color: '#FFC107',
     width: '100%',
   },
   linkText: {
@@ -43,4 +49,10 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     textAlign: 'center',
   },
+  image: {
+    width: 220,
+    height: 220,
+    marginBottom: 40,
+  },
+
 });

@@ -38,7 +38,7 @@ const AppButton: React.FC<AppButtonProps> = ({
     : Colors.primary;
   const textColor = disabled
     ? "#f0f0f0"
-    : theme.text;
+    : "#FFFFFF";
   const indicatorColor = Colors.warning;
 
   return (
