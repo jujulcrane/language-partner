@@ -7,15 +7,14 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
   useColorScheme,
   View,
 } from 'react-native';
 import ThemedText from '@/components/ThemedText';
 import ThemedView from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
-import { Ionicons } from '@expo/vector-icons';
 import RepeatButton from './RepeatButton';
+import TranslationBubble from './TranslationBubble';
 
 interface TalkProps {
   mode: 'text' | 'mic';
@@ -47,6 +46,7 @@ const Talk: React.FC<TalkProps> = ({
               <ThemedText style={styles.label}>Partner:</ThemedText>
               <ThemedText style={styles.bubble}>{partner}</ThemedText>
               <RepeatButton text={partner} />
+              <TranslationBubble source={partner} />
             </View>
           )}
           {feedback && (
@@ -54,6 +54,7 @@ const Talk: React.FC<TalkProps> = ({
               <ThemedText style={styles.label}>Feedback:</ThemedText>
               <ThemedText style={styles.feedback}>{feedback}</ThemedText>
               <RepeatButton text={feedback} />
+              <TranslationBubble source={feedback} />
             </View>
           )}
           {/* Only show text input if mode === 'text' */}

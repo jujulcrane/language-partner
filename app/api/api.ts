@@ -86,3 +86,16 @@ export const fetchTTS = async (
   return res.arrayBuffer();
 };
 
+export async function translateText(text: string) {
+  const res = await fetch(`${API_BASE_URL}/api/translate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),   // ja -> en by default
+  });
+  if (!res.ok) throw new Error('Translation request failed');
+  const { translation } = await res.json();
+  return translation as string;
+}
+
+
+

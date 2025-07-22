@@ -6,6 +6,7 @@ import conversationRouter from './routes/conversations';
 import ttsRouter from './routes/text-to-speech';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import translateRouter from './routes/translate';
 
 dotenv.config();
 
@@ -20,5 +21,6 @@ app.use(generateRouter);    // /api/generate-response
 app.use(dataRouter); // /api/items
 app.use(conversationRouter);    // /api/users/:uid/sessions ..etc.
 app.use(ttsRouter); // /api/text-to-speech
+app.use(translateRouter); // /api/translate
 
 app.listen(3000, () => console.log('Server running on port 3000'));
