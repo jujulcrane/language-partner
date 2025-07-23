@@ -1,22 +1,36 @@
 import { API_BASE_URL } from "@/constants/consts";
 
 // Returns the user's name (or throws if the request fails)
-export const getName = async (uid: string): Promise<string> => {
-  const response = await fetch(
+export const getName = async (uid: string): Promise<string | ''> => {
+  const res = await fetch(
     `${API_BASE_URL}/api/users/${encodeURIComponent(uid)}/name`
   );
 
-  if (!response.ok) {
-    throw new Error(`Request failed – status ${response.status}`);
+  if (!res.ok) {
+    // Prefer returning '' so the caller can decide what to do
+    console.warn(`getName → ${res.status}`);
+    return '';
   }
 
-  const { name } = (await response.json()) as { name: string | undefined };
+  const { name } = (await res.json()) as { name?: string };
+  return name ?? '';
+};
 
-  if (!name) {
-    throw new Error('Name not found for this user');
+export const apiSetName = async (uid: string, name: string): Promise<void> => {
+  const res = await fetch(
+    `${API_BASE_URL}/api/users/${encodeURIComponent(uid)}/name`,
+    {
+      method: 'PUT',                      // <- idempotent update
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    }
+  );
+
+  if (!res.ok) {
+    const msg = `setName failed – status ${res.status}`;
+    console.error(msg);
+    throw new Error(msg);
   }
-
-  return name;       
 };
 
 

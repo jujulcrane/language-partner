@@ -5,14 +5,17 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { Tabs, router } from 'expo-router';
 import * as Updates from 'expo-updates';      // ← add
+import { auth } from '@/utils/firebaseConfig';
+import { signOut } from 'firebase/auth';
 
 export default function TabsLayout() {
   /* helper */
-  const hardReload = async () => {
+  const handleLogout = async () => {
     try {
-      await Updates.reloadAsync();            // full JS reload
+      await signOut(auth);                // clears Firebase session
+      router.replace('/auth/sign-in');    // back to login screen
     } catch (e) {
-      console.warn('Could not reload app', e);
+      console.warn('Could not sign out', e);
     }
   };
 
@@ -27,14 +30,14 @@ export default function TabsLayout() {
         /* ───── header buttons ───── */
         headerLeft: () => (
           <Pressable
-            onPress={hardReload}
+            onPress={handleLogout}
             style={({ pressed }) => ({
               marginLeft: 16,
               opacity: pressed ? 0.5 : 1,
             })}
-            accessibilityLabel="Reload app"
+            accessibilityLabel="Sign out"
           >
-            <Ionicons name="reload" size={24} color="#FFC107" />
+            <Ionicons name="log-out-outline" size={24} color="#FFC107" />
           </Pressable>
         ),
         headerRight: () => (
@@ -44,14 +47,28 @@ export default function TabsLayout() {
               marginRight: 16,
               opacity: pressed ? 0.5 : 1,
             })}
-            accessibilityLabel="Log out"
+            accessibilityLabel="Go home"
           >
-            <Ionicons name="log-out-outline" size={24} color="#FFC107" />
+            <Ionicons name="home-outline" size={24} color="#FFC107" />
           </Pressable>
         ),
       }}
     >
       {/* your tabs */}
+      <Tabs.Screen
+        name="profile/index"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ focused }) => (
+            <Ionicons
+              size={24}
+              name={focused ? 'person' : 'person-outline'}
+              color={focused ? '#FFC107' : '#888'}
+            />
+          ),
+        }}
+      />
+
       <Tabs.Screen
         name="conversation/setup"
         options={{
@@ -86,19 +103,6 @@ export default function TabsLayout() {
             <AntDesign
               size={24}
               name={focused ? 'clockcircle' : 'clockcircleo'}
-              color={focused ? '#FFC107' : '#888'}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile/index"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ focused }) => (
-            <Ionicons
-              size={24}
-              name={focused ? 'person' : 'person-outline'}
               color={focused ? '#FFC107' : '#888'}
             />
           ),

@@ -21,6 +21,24 @@ router.get("/api/users/:uid/name", async (req, res) => {
   }
 });
 
+/* PUT /api/users/:uid/name  { name: "Alice" } */
+router.put('/api/users/:uid/name', async (req, res) => {
+  try {
+    const { uid }   = req.params;
+    const { name }  = req.body as { name?: string };
+
+    if (!name || typeof name !== 'string') {
+      return res.status(400).json({ error: 'Missing “name” in body' });
+    }
+
+    await db.collection('users').doc(uid).set({ name }, { merge: true });
+    res.status(200).json({ name });
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: errorMessage });
+  }
+});
+
 /* ───────────────────────────────────────────────
    1)  START a new session
    POST /api/users/:uid/sessions
