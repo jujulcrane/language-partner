@@ -2,6 +2,7 @@ import React, { useMemo, useEffect } from 'react';
 import {
   ActivityIndicator,
   Button,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -37,7 +38,10 @@ const Talk: React.FC<TalkProps> = ({
   return (
     <ThemedView style={styles.root}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ ios: 'padding' })} >
-        <ScrollView contentContainerStyle={styles.scroll}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={styles.scroll}>
           <ThemedText title style={styles.header}>
             Talk to Your Language Partner
           </ThemedText>
@@ -63,8 +67,11 @@ const Talk: React.FC<TalkProps> = ({
               <TextInput
                 multiline
                 value={inputText}
+                onSubmitEditing={() => {
+                  Keyboard.dismiss();
+                  onSend();
+                }}
                 onChangeText={setInputText}
-                onSubmitEditing={onSend}
                 placeholder="Type Japanese here…"
                 placeholderTextColor={theme.iconColor}
                 style={styles.input}

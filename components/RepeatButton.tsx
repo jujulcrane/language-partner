@@ -43,6 +43,7 @@ const RepeatButton: React.FC<RepeatButtonProps> = ({
     try {
       /* stop any previous playback */
       if (soundRef.current) {
+        await soundRef.current.stopAsync();
         await soundRef.current.unloadAsync();
         soundRef.current = null;
       }
