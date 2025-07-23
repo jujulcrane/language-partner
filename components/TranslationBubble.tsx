@@ -1,5 +1,5 @@
 // components/TranslationBubble.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from '@/components/ThemedText';
@@ -13,6 +13,10 @@ type Props = { source: string; };
 const TranslationBubble: React.FC<Props> = ({ source }) => {
   const [english, setEnglish] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setEnglish(null);
+  }, [source]);
 
   const onPress = async () => {
     // Toggle off if we already have the translation
