@@ -12,10 +12,11 @@ import {
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { getSessions, getTurns, deleteSession } from '@/app/api/api';
-import { UUID } from '@/constants/consts';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 import RepeatButton from '@/components/RepeatButton';
+import { auth } from '@/utils/firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -39,7 +40,15 @@ type Turn = {
 };
 
 const History = () => {
-  const uid = UUID;
+  const [uid, setUid] = useState<string | null>(auth.currentUser?.uid ?? null);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, user => setUid(user?.uid ?? null));
+    return unsub;
+  }, []);
+
+  const uidStr = uid ?? '';  //'' = "not signed in"
+
   const [sessions, setSessions] = useState<Session[]>([]);
   const scheme = useColorScheme() as 'light' | 'dark' | null;
   const theme = Colors[scheme ?? 'light'];
@@ -50,7 +59,7 @@ const History = () => {
     getSessions(uid)
       .then((raw) => setSessions(raw.map((s) => ({ ...s, expanded: false }))))
       .catch(console.error);
-  }, [uid]);
+  }, [uidStr]);
 
   /* ─ expand / collapse ─ */
   const toggle = (sid: string) => {
@@ -64,12 +73,13 @@ const History = () => {
     );
 
     // lazy-load turns
+    if (!uidStr) return;
     const target = sessions.find(s => s.id === sid);
     if (target?.turns || target?.loadingTurns) return;
 
     (async () => {
       try {
-        const turns = await getTurns(uid, sid);
+        const turns = await getTurns(uidStr, sid);
         setSessions(prev =>
           prev.map(sess =>
             sess.id === sid ? { ...sess, turns, loadingTurns: false } : sess
@@ -88,8 +98,9 @@ const History = () => {
 
   /* ─ delete ─ */
   const onDelete = async (sid: string) => {
+    if (!uidStr) return;
     try {
-      await deleteSession(uid, sid);
+      await deleteSession(uidStr, sid);
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setSessions(prev => prev.filter(s => s.id !== sid));
     } catch (e) {

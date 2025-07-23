@@ -1,12 +1,14 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
 import Talk from '@/components/Talk';
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import { Buffer } from 'buffer';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
-import { API_BASE_URL, UUID } from '@/constants/consts';
+import { API_BASE_URL } from '@/constants/consts';
 import { addTurn, fetchTTS, startSession } from '@/app/api/api';
+import { auth } from '@/utils/firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
 
 type ConversationManagerProps = {
   jlptLevel?: string;
@@ -15,8 +17,14 @@ type ConversationManagerProps = {
 
 const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined }: ConversationManagerProps) => {
 
+  const [uid, setUid] = useState<string | null>(auth.currentUser?.uid ?? null);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, user => setUid(user?.uid ?? null));
+    return unsub;
+  }, []);
+
   const soundRef = useRef<Audio.Sound | null>(null);
-  const uid = UUID; //PLACE HOLDER FOR USER ID
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   const [mode, setMode] = useState<'text' | 'mic'>('text');
@@ -110,6 +118,12 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
   // Send input (called on mode text: button click; mode mic: after transcription)
   const sendSpeech = async (speech: string) => {
     if (!speech.trim()) return;
+
+    if (!uid) {
+      console.warn('User not signed in');
+      return;                                   // or redirect to /auth/sign-in
+    }
+
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/generate-response`, {
