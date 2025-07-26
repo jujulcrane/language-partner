@@ -1,4 +1,4 @@
-# Japanese Language Partner (JLP) – Conversational AI Stuffed Animal
+# Talking Tanuki - Japanese Language Partner – Conversational AI Stuffed Animal
 
 **A full-stack, hardware-integrated language learning companion for Japanese learners, powered by ESP32, cloud AI, and a cross-platform React Native app.**
 
@@ -27,7 +27,7 @@ Japanese Language Partner (JLP) is an interactive, AI-powered stuffed animal des
 - **Conversation logging** and progress tracking
 - **React Native mobile app** for settings, logs, and user feedback
 - **Cloud-based AI** (STT, LLM, TTS) for accurate, personalized interaction
-- **Portable, rechargeable hardware** embedded in a soft stuffed animal
+- **Portable, rechargeable hardware** embedded in a soft stuffed tanuki (Japanese raccoon dog)
 
 ## System Architecture
 
@@ -59,7 +59,6 @@ Mobile app ↔ Firebase/Firestore ↔ Backend ↔ ESP32
 | Breadboard, wires, resistors, LEDs, buttons | 1ea | Prototyping and user feedback                | SparkFun/Amazon                                        |
 | Stuffed Animal Shell                        | 1   | Physical enclosure                           | Amazon                                                 |
 
-See `/hardware` for wiring diagrams and BOM.
 
 ## Mobile App
 
@@ -67,10 +66,8 @@ See `/hardware` for wiring diagrams and BOM.
 - Features:
   - Device pairing and setup
   - Conversation log and playback
-  - Progress and stats dashboard
   - JLPT level and grammar settings
   - User authentication (Firebase)
-- See `/src` for app code and `/docs` for setup instructions.
 
 ## Backend
 
@@ -79,7 +76,7 @@ See `/hardware` for wiring diagrams and BOM.
   - Calls to Speech-to-Text, AI, and TTS APIs
   - Conversation management and context
   - Communication with Firebase and the mobile app
-- Built with Node.js or Python (see `/backend`)
+- Built with Node.js and Express
 - Deployable as serverless functions or on a cloud VM
 
 ## Database Schema
@@ -93,7 +90,6 @@ See `/hardware` for wiring diagrams and BOM.
 | progress        | grammar, vocabulary                            | Per-user learning progress         |
 | settings        | notifications, theme                           | User-specific app settings         |
 
-See `/docs/database.md` for full schema and examples.
 
 ## Getting Started
 
