@@ -1,10 +1,11 @@
 import express from "express";
 import { db } from "../firebaseAdmin";
+import { optionalAuth } from '../middleware/auth';
 
 const router = express.Router();
 
 // GET document(s) from Firestore
-router.get("/api/items", async (req, res) => {
+router.get("/api/items", optionalAuth, async (req, res) => {
   try {
     const snapshot = await db.collection("items").get();
     const docs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -16,7 +17,7 @@ router.get("/api/items", async (req, res) => {
 });
 
 // POST a new document
-router.post("/api/items", async (req, res) => {
+router.post("/api/items", optionalAuth, async (req, res) => {
   try {
     const data = req.body;
     const docRef = await db.collection("items").add(data);

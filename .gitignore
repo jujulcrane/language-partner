@@ -38,3 +38,5 @@ yarn-error.*
 *.tsbuildinfo
 
 serviceAccountKey.json
+SECURITY_FIXES.md
+SETUP.md

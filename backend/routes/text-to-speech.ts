@@ -1,11 +1,13 @@
 import express from 'express';
-import fetch from 'node-fetch';               
+import fetch from 'node-fetch';
 import { config } from 'dotenv';
+import { optionalAuth } from '../middleware/auth';
+
 config();
 
 const router = express.Router();
 
-router.post('/api/text-to-speech', async (req, res) => {
+router.post('/api/text-to-speech', optionalAuth, async (req, res) => {
   const { text, voice = 'alloy', format = 'mp3' } = req.body;
 
   const openaiRes = await fetch('https://api.openai.com/v1/audio/speech', {

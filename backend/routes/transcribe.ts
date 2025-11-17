@@ -4,8 +4,10 @@ import OpenAI from 'openai';
 import fs from 'fs';
 import dotenv from 'dotenv';
 import path from 'path';
+import { verifyFirebaseToken } from '../middleware/auth';
+
 const router = express.Router();
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: 'uploads/', limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB limit
 
 
 dotenv.config();
@@ -13,7 +15,7 @@ dotenv.config();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // POST /api/speech-to-text
-router.post('/api/speech-to-text', upload.single('file'), async (req, res) => {
+router.post('/api/speech-to-text', verifyFirebaseToken, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });

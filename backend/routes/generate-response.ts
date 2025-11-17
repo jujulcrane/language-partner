@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { z } from 'zod';
 import dotenv from 'dotenv';
 import { OpenAI } from 'openai';
+import { verifyFirebaseToken } from '../middleware/auth';
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ type ResponseData = z.infer<typeof responseSchema>;
 
 router.post(
   '/api/generate-response',
+  verifyFirebaseToken,
   async (req: Request, res: Response<ResponseData | { error: string }>) => {
     try {
       const { speech, jlptLevel, grammarPrompt } = req.body as { speech?: string; jlptLevel?: string; grammarPrompt?: string };

@@ -1,43 +1,39 @@
 {
-  "name": "language-partner",
+  "name": "talking-tanuki-monorepo",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "private": true,
+  "description": "Talking Tanuki - AI Japanese Language Learning Platform",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "frontend": "cd frontend && npm start",
+    "frontend:ios": "cd frontend && npm run ios",
+    "frontend:android": "cd frontend && npm run android",
+    "backend": "cd backend && npm run dev",
+    "backend:prod": "cd backend && npm start",
+    "web": "cd tanuki-web && npm start",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install && cd ../tanuki-web && npm install",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "setup": "echo 'Setting up Talking Tanuki...' && npm run install:all"
   },
-  "dependencies": {
-    "@expo/vector-icons": "^14.1.0",
-    "expo": "~53.0.17",
-    "expo-application": "~6.1.5",
-    "expo-auth-session": "~6.2.1",
-    "expo-av": "~15.1.7",
-    "expo-constants": "~17.1.7",
-    "expo-file-system": "~18.1.11",
-    "expo-linking": "~7.1.7",
-    "expo-random": "^14.0.1",
-    "expo-router": "~5.1.3",
-    "expo-speech": "~13.1.7",
-    "expo-status-bar": "~2.2.3",
-    "expo-updates": "~0.28.17",
-    "firebase": "^12.0.0",
-    "openai": "^5.9.2",
-    "react": "19.0.0",
-    "react-native": "0.79.5",
-    "react-native-reanimated": "^3.17.4",
-    "react-native-safe-area-context": "5.4.0",
-    "react-native-screens": "~4.11.1",
-    "react-native-svg": "15.11.2",
-    "sonner-native": "^0.21.0"
+  "workspaces": [
+    "frontend",
+    "backend",
+    "tanuki-web"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/talking-tanuki"
   },
+  "keywords": [
+    "japanese",
+    "language-learning",
+    "ai",
+    "react-native",
+    "firebase",
+    "openai"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
   "devDependencies": {
-    "@babel/core": "^7.25.2",
-    "@types/react": "~19.0.10",
-    "expo-module-scripts": "^4.1.9",
-    "react-native-dotenv": "^3.4.11",
-    "typescript": "~5.8.3"
-  },
-  "private": true
+    "concurrently": "^8.2.2"
+  }
 }

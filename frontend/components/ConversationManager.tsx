@@ -99,7 +99,20 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
     try {
       const formData = new FormData();
       formData.append('file', { uri, name: 'audio.m4a', type: 'audio/m4a' } as any);
-      const response = await fetch(`${API_BASE_URL}/api/speech-to-text`, { method: 'POST', body: formData });
+
+      // Get auth token
+      const user = auth.currentUser;
+      const token = user ? await user.getIdToken() : null;
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/speech-to-text`, {
+        method: 'POST',
+        headers,
+        body: formData
+      });
       const data = await response.json();
       const text = data.text || '';
 
@@ -126,9 +139,17 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
 
     setLoading(true);
     try {
+      // Get auth token
+      const user = auth.currentUser;
+      const token = user ? await user.getIdToken() : null;
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch(`${API_BASE_URL}/api/generate-response`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ speech, jlptLevel, grammarPrompt }),
       });
       if (!res.ok) throw new Error('Server error');

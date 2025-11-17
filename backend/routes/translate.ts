@@ -3,6 +3,7 @@ import express, { Request, Response } from 'express';
 import { z } from 'zod';
 import { OpenAI } from 'openai';
 import dotenv from 'dotenv';
+import { optionalAuth } from '../middleware/auth';
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ type TranslationResponse = z.infer<typeof responseSchema>;
 /* ---------- endpoint ---------- */
 translateRouter.post(
   '/api/translate',
+  optionalAuth,
   async (
     req: Request,
     res: Response<TranslationResponse | { error: string }>

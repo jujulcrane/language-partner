@@ -1,12 +1,28 @@
 import express from "express";
 import { db } from "../firebaseAdmin";          // already initialised admin SDK
 import admin from "firebase-admin";             // for FieldValue
+import { verifyFirebaseToken } from '../middleware/auth';
 
 const router = express.Router();
 const { FieldValue } = admin.firestore;
 
+// Middleware to verify the user owns the resource
+const verifyUserOwnership = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const { uid } = req.params;
+
+  if (!req.uid) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  if (uid !== req.uid) {
+    return res.status(403).json({ error: 'Forbidden: You can only access your own data' });
+  }
+
+  next();
+};
+
 // GET name from Firestore
-router.get("/api/users/:uid/name", async (req, res) => {
+router.get("/api/users/:uid/name", verifyFirebaseToken, verifyUserOwnership, async (req, res) => {
   const { uid } = req.params;
   try {
     const userSnap = await db.collection("users").doc(uid).get();
@@ -22,7 +38,7 @@ router.get("/api/users/:uid/name", async (req, res) => {
 });
 
 /* PUT /api/users/:uid/name  { name: "Alice" } */
-router.put('/api/users/:uid/name', async (req, res) => {
+router.put('/api/users/:uid/name', verifyFirebaseToken, verifyUserOwnership, async (req, res) => {
   try {
     const { uid }   = req.params;
     const { name }  = req.body as { name?: string };
@@ -45,7 +61,7 @@ router.put('/api/users/:uid/name', async (req, res) => {
    body: { jlptLevel: "N4", grammarPrompt: "てもいい" }
    returns: { sessionId }
 ───────────────────────────────────────────────── */
-router.post("/api/users/:uid/sessions", async (req, res) => {
+router.post("/api/users/:uid/sessions", verifyFirebaseToken, verifyUserOwnership, async (req, res) => {
   try {
     const { uid } = req.params;
     const { jlptLevel, grammarPrompt } = req.body;
@@ -72,7 +88,7 @@ router.post("/api/users/:uid/sessions", async (req, res) => {
    POST /api/users/:uid/sessions/:sid/turns
    body: { userText, partnerReply, feedback, jlptLevel, grammarPrompt }
 ───────────────────────────────────────────────── */
-router.post("/api/users/:uid/sessions/:sid/turns", async (req, res) => {
+router.post("/api/users/:uid/sessions/:sid/turns", verifyFirebaseToken, verifyUserOwnership, async (req, res) => {
   try {
     const { uid, sid } = req.params;
     const { userText, partnerReply, feedback, jlptLevel, grammarPrompt } =
@@ -112,7 +128,7 @@ router.post("/api/users/:uid/sessions/:sid/turns", async (req, res) => {
    3)  LIST sessions (history overview)
    GET /api/users/:uid/sessions
 ───────────────────────────────────────────────── */
-router.get("/api/users/:uid/sessions", async (req, res) => {
+router.get("/api/users/:uid/sessions", verifyFirebaseToken, verifyUserOwnership, async (req, res) => {
   try {
     const { uid } = req.params;
 
@@ -134,7 +150,7 @@ router.get("/api/users/:uid/sessions", async (req, res) => {
    4)  GET full turns of one session
    GET /api/users/:uid/sessions/:sid/turns
 ───────────────────────────────────────────────── */
-router.get("/api/users/:uid/sessions/:sid/turns", async (req, res) => {
+router.get("/api/users/:uid/sessions/:sid/turns", verifyFirebaseToken, verifyUserOwnership, async (req, res) => {
   try {
     const { uid, sid } = req.params;
 
@@ -158,7 +174,7 @@ router.get("/api/users/:uid/sessions/:sid/turns", async (req, res) => {
    5)  DELETE a session (and its turns)
    DELETE /api/users/:uid/sessions/:sid
 ───────────────────────────────────────────────── */
-router.delete("/api/users/:uid/sessions/:sid", async (req, res) => {
+router.delete("/api/users/:uid/sessions/:sid", verifyFirebaseToken, verifyUserOwnership, async (req, res) => {
   try {
     const { uid, sid } = req.params;
 
