@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 16.0.0"
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -8,17 +9,28 @@
       "distribution": "internal",
       "ios": {
         "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://language-partner-backend.fly.dev"
       }
     },
     "preview": {
       "distribution": "internal",
       "ios": {
-        "simulator": false
+        "simulator": false,
+        "autoIncrement": true
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://language-partner-backend.fly.dev"
       }
     },
     "production": {
       "ios": {
-        "simulator": false
+        "simulator": false,
+        "autoIncrement": true
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://language-partner-backend.fly.dev"
       }
     }
   },

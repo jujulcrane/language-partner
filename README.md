@@ -43,22 +43,21 @@ Mobile app ↔ Firebase/Firestore ↔ Backend ↔ ESP32
 
 ## Demo
 
-*Coming soon: video demo and screenshots.*
+_Coming soon: video demo and screenshots._
 
 ## Hardware
 
-| Component                                   | Qty | Description                                  | Source                                            |
-|----------------------------------------------|-----|----------------------------------------------|--------------------------------------------------------|
-| ESP32-S3 DevKitC-1                          | 1   | Main microcontroller (WiFi, I2S, BT)         | Adafruit                                               |
-| I2S MEMS Microphone (SPH0645LM4H)           | 1   | Digital audio input                          | Adafruit                                               |
-| MAX98357A I2S Amplifier                     | 1   | Digital audio output to speaker              | Adafruit                                               |
-| 3.7V 2500mAh LiPo Battery                   | 1   | Rechargeable power source                    | Adafruit                                               |
-| Micro-Lipo Charger (MicroUSB)               | 1   | Battery charging                             | Adafruit                                               |
-| 4Ω 3W Speaker (or 8Ω 1W for prototyping)    | 1   | Audio output                                 | Digi-Key/Adafruit                                      |
-| MicroSD Card Module & 16GB MicroSD Card     | 1   | Removable storage                            | Amazon                                                 |
-| Breadboard, wires, resistors, LEDs, buttons | 1ea | Prototyping and user feedback                | SparkFun/Amazon                                        |
-| Stuffed Animal Shell                        | 1   | Physical enclosure                           | Amazon                                                 |
-
+| Component                                   | Qty | Description                          | Source            |
+| ------------------------------------------- | --- | ------------------------------------ | ----------------- |
+| ESP32-S3 DevKitC-1                          | 1   | Main microcontroller (WiFi, I2S, BT) | Adafruit          |
+| I2S MEMS Microphone (SPH0645LM4H)           | 1   | Digital audio input                  | Adafruit          |
+| MAX98357A I2S Amplifier                     | 1   | Digital audio output to speaker      | Adafruit          |
+| 3.7V 2500mAh LiPo Battery                   | 1   | Rechargeable power source            | Adafruit          |
+| Micro-Lipo Charger (MicroUSB)               | 1   | Battery charging                     | Adafruit          |
+| 4Ω 3W Speaker (or 8Ω 1W for prototyping)    | 1   | Audio output                         | Digi-Key/Adafruit |
+| MicroSD Card Module & 16GB MicroSD Card     | 1   | Removable storage                    | Amazon            |
+| Breadboard, wires, resistors, LEDs, buttons | 1ea | Prototyping and user feedback        | SparkFun/Amazon   |
+| Stuffed Animal Shell                        | 1   | Physical enclosure                   | Amazon            |
 
 ## Mobile App
 
@@ -83,13 +82,12 @@ Mobile app ↔ Firebase/Firestore ↔ Backend ↔ ESP32
 
 **Firestore Collections:**
 
-| Collection      | Fields/Docs                                    | Description                        |
-|-----------------|------------------------------------------------|------------------------------------|
-| users           | displayName, email, jlptLevel, grammarTargets  | User profile and preferences       |
-| conversations   | userId, startedAt, jlptLevel, messages         | Conversation sessions and logs     |
-| progress        | grammar, vocabulary                            | Per-user learning progress         |
-| settings        | notifications, theme                           | User-specific app settings         |
-
+| Collection    | Fields/Docs                                   | Description                    |
+| ------------- | --------------------------------------------- | ------------------------------ |
+| users         | displayName, email, jlptLevel, grammarTargets | User profile and preferences   |
+| conversations | userId, startedAt, jlptLevel, messages        | Conversation sessions and logs |
+| progress      | grammar, vocabulary                           | Per-user learning progress     |
+| settings      | notifications, theme                          | User-specific app settings     |
 
 ## Getting Started
 
@@ -134,3 +132,11 @@ See `/docs/setup.md` for detailed instructions.
 - [ ] Demo video and deployment guide
 
 **Impress employers by building a full-stack, hardware-integrated, AI-powered language learning companion—demonstrating skills in embedded systems, cloud, mobile, and user experience!**
+
+## Submitting to testflight
+
+1. Create a new production build:
+   eas build --platform ios --profile production
+
+2. Submit to TestFlight once the build completes:
+   eas submit --platform ios --profile production
