@@ -257,14 +257,8 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
       console.log(`📊 [SEND-OPTIMIZED] Feedback: "${json.feedback?.substring(0, 50)}..."`);
 
       // Always play the FULL response for TTS
-      // (First sentence info is just for logging/metrics)
-      if (json.firstSentence) {
-        console.log(`🎯 [SEND-OPTIMIZED] First sentence detected: "${json.firstSentence}"`);
-        console.log(`⚡ [SEND-OPTIMIZED] Backend detected first sentence early (faster generation)`);
-      }
-
       const ttsStart = performance.now();
-      speakWithOpenAI(json.response); // Play FULL response
+      speakWithOpenAI(json.response);
       console.log(`🔊 [SEND-OPTIMIZED] TTS started at ${(ttsStart - startTime).toFixed(0)}ms`);
 
       // Update UI with complete response
