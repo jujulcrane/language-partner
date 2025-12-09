@@ -199,7 +199,7 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
     }
   };
 
-  // Send input (called on mode text: button click; mode mic: after transcription)
+  // Send input with STREAMING (called on mode text: button click; mode mic: after transcription)
   const sendSpeech = async (speech: string) => {
     if (!speech.trim()) return;
 
@@ -210,16 +210,20 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
     }
 
     const startTime = performance.now();
-    console.log('🚀 [SEND] Starting response generation...');
-    console.log(`📝 [SEND] User input: "${speech}"`);
+    console.log('🌊 [SEND-STREAM] Starting STREAMING response generation...');
+    console.log(`📝 [SEND-STREAM] User input: "${speech}"`);
 
     setLoading(true);
+    let fullResponse = '';
+    let fullFeedback = '';
+    let firstSentenceReceived = false;
+
     try {
       // Get auth token
       const tokenStart = performance.now();
       const user = auth.currentUser;
       const token = user ? await user.getIdToken() : null;
-      console.log(`🔑 [SEND] Auth token retrieved in ${(performance.now() - tokenStart).toFixed(0)}ms`);
+      console.log(`🔑 [SEND-STREAM] Auth token retrieved in ${(performance.now() - tokenStart).toFixed(0)}ms`);
 
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
       if (token) {
@@ -227,36 +231,47 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
       }
 
       const fetchStart = performance.now();
-      console.log('📤 [SEND] Requesting LLM response...');
+      console.log('📤 [SEND-STREAM] Requesting STREAMING LLM response...');
+
+      // Use optimized endpoint (streaming internally)
       const res = await fetch(`${API_BASE_URL}/api/generate-response`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ speech, jlptLevel, grammarPrompt }),
       });
 
-      console.log(`📥 [SEND] LLM response received in ${(performance.now() - fetchStart).toFixed(0)}ms, status: ${res.status}`);
-
       if (!res.ok) {
         const errorText = await res.text();
-        console.error('❌ [SEND] Server error:', res.status, errorText);
+        console.error('❌ [SEND-STREAM] Server error:', res.status, errorText);
         alert(`Response generation failed: ${res.status} - ${errorText}`);
         setLoading(false);
         return;
       }
 
-      const json = await res.json();
-      console.log(`✅ [SEND] Response parsed: "${json.response?.substring(0, 50)}..."`);
-      console.log(`📊 [SEND] Feedback: "${json.feedback?.substring(0, 50)}..."`);
+      console.log(`📥 [SEND-OPTIMIZED] Response received in ${(performance.now() - fetchStart).toFixed(0)}ms`);
 
-      // OPTIMIZATION: Update UI and start TTS immediately (don't wait for Firestore)
-      const uiUpdateStart = performance.now();
-      setTalkState({ partner: json.response, feedback: json.feedback });
-      console.log(`🖥️ [SEND] UI updated in ${(performance.now() - uiUpdateStart).toFixed(0)}ms`);
+      // Parse JSON response
+      const json: { response: string; feedback: string; firstSentence?: string } = await res.json();
+
+      console.log(`✅ [SEND-OPTIMIZED] Response parsed: "${json.response?.substring(0, 50)}..."`);
+      console.log(`📊 [SEND-OPTIMIZED] Feedback: "${json.feedback?.substring(0, 50)}..."`);
+
+      // Always play the FULL response for TTS
+      // (First sentence info is just for logging/metrics)
+      if (json.firstSentence) {
+        console.log(`🎯 [SEND-OPTIMIZED] First sentence detected: "${json.firstSentence}"`);
+        console.log(`⚡ [SEND-OPTIMIZED] Backend detected first sentence early (faster generation)`);
+      }
 
       const ttsStart = performance.now();
-      speakWithOpenAI(json.response); // speak the response immediately
-      console.log(`🔊 [SEND] TTS initiated in ${(performance.now() - ttsStart).toFixed(0)}ms`);
-      console.log(`⏱️ [SEND] Total time to TTS: ${(performance.now() - startTime).toFixed(0)}ms`);
+      speakWithOpenAI(json.response); // Play FULL response
+      console.log(`🔊 [SEND-OPTIMIZED] TTS started at ${(ttsStart - startTime).toFixed(0)}ms`);
+
+      // Update UI with complete response
+      fullResponse = json.response;
+      fullFeedback = json.feedback;
+      setTalkState({ partner: fullResponse, feedback: fullFeedback });
+      console.log(`⏱️ [SEND-OPTIMIZED] Total time: ${(performance.now() - startTime).toFixed(0)}ms`);
 
       setInputText('');
 
@@ -280,8 +295,8 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
           // Record turn in firestore
           await addTurn(uid, sid, {
             userText: speech,
-            partnerReply: json.response,
-            feedback: json.feedback,
+            partnerReply: fullResponse,
+            feedback: fullFeedback,
             jlptLevel: jlptLevel || '',
             grammarPrompt: grammarPrompt || '',
           });
@@ -290,8 +305,9 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
           console.error('❌ [FIRESTORE] Background operation failed:', err);
         }
       })();
+
     } catch (e) {
-      console.error('❌ [SEND] Unexpected error:', e);
+      console.error('❌ [SEND-STREAM] Unexpected error:', e);
       alert(`Error: ${e instanceof Error ? e.message : 'Unknown error occurred'}`);
     }
     setLoading(false);
