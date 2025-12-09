@@ -26,6 +26,8 @@ const RepeatButton: React.FC<RepeatButtonProps> = ({
   style,
 }) => {
   const soundRef = useRef<Audio.Sound | null>(null);
+  // OPTIMIZATION: Track audio mode to avoid redundant configuration
+  const audioModeSetRef = useRef<boolean>(false);
 
   /* cleanup on unmount */
   useEffect(() => {
@@ -48,17 +50,20 @@ const RepeatButton: React.FC<RepeatButtonProps> = ({
         soundRef.current = null;
       }
 
-      /* Force speaker / media channel */
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+      /* OPTIMIZATION: Only set audio mode once (not on every button press) */
+      if (!audioModeSetRef.current) {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          interruptionModeIOS: InterruptionModeIOS.DoNotMix,
 
-        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-        shouldDuckAndroid: false,
-        playThroughEarpieceAndroid: false,
-        staysActiveInBackground: false,
-      });
+          interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+          shouldDuckAndroid: false,
+          playThroughEarpieceAndroid: false,
+          staysActiveInBackground: false,
+        });
+        audioModeSetRef.current = true;
+      }
 
       /* Fetch OpenAI TTS */
       const buf = await fetchTTS(text, voice);

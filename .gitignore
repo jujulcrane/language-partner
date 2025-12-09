@@ -40,3 +40,5 @@ yarn-error.*
 serviceAccountKey.json
 SECURITY_FIXES.md
 SETUP.md
+OVERVIEW. md
+audio-pipeline-analysis.md

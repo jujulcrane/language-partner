@@ -28,23 +28,26 @@ router.post(
         });
       }
 
+      // OPTIMIZATION: Use structured text format instead of JSON to enable streaming in future
       let systemPrompt =
         'Your name is Tanuki Chan and you are a friendly native Japanese speaker helping a learner. ' +
         'Analyse their speech, give concise grammar feedback, then reply and ' +
-        'encourage them to continue in Japanese. Return ONLY valid JSON with ' +
-        'keys "response" and "feedback".';
+        'encourage them to continue in Japanese.\n\n' +
+        'Format your response EXACTLY as follows:\n' +
+        'RESPONSE: [Your Japanese reply to the user]\n' +
+        'FEEDBACK: [Your concise grammar feedback]';
 
         if (jlptLevel) {
-        systemPrompt += ` Respond ONLY at JLPT level ${jlptLevel}.`;
+        systemPrompt += `\n\nRespond ONLY at JLPT level ${jlptLevel}.`;
       }
       if (grammarPrompt) {
-        systemPrompt += ` Center your reply around practicing the following grammar point: "${grammarPrompt}". ` +
+        systemPrompt += `\n\nCenter your reply around practicing the following grammar point: "${grammarPrompt}". ` +
                         `Make your response prompt the user to use and notice this grammar. Also, if the user's message did not use this grammar yet, encourage them to try.`;
       }
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',               
-        response_format: { type: 'json_object' },
+        model: 'gpt-4o-mini',
+        // OPTIMIZATION: Removed response_format to enable streaming in future
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: speech },
@@ -52,9 +55,19 @@ router.post(
         temperature: 0.7,
       });
 
-      const raw = completion.choices[0].message.content ?? '{}';
+      const raw = completion.choices[0].message.content ?? '';
 
-      const parsed: ResponseData = responseSchema.parse(JSON.parse(raw));
+      // Parse structured text response
+      const responseMatch = raw.match(/RESPONSE:\s*([\s\S]+?)(?=\nFEEDBACK:|$)/);
+      const feedbackMatch = raw.match(/FEEDBACK:\s*([\s\S]+?)$/);
+
+      const parsed: ResponseData = {
+        response: responseMatch?.[1]?.trim() || 'こんにちは！',
+        feedback: feedbackMatch?.[1]?.trim() || 'Keep practicing!',
+      };
+
+      // Validate with schema
+      responseSchema.parse(parsed);
 
       return res.status(200).json(parsed);
     } catch (err: any) {

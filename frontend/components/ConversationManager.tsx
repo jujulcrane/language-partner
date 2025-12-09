@@ -37,14 +37,12 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
     feedback: string | null;
   }>({ partner: null, feedback: null });
 
-  async function speakWithOpenAI(text: string) {
-    /* stop whatever is already playing */
-    if (soundRef.current) {
-      await soundRef.current.unloadAsync();
-      soundRef.current = null;
-    }
+  // OPTIMIZATION: Track current audio mode to avoid redundant configuration calls
+  const currentAudioModeRef = useRef<'playback' | 'recording' | null>(null);
 
-    /* force “media / speaker” route */
+  // OPTIMIZATION: Helper to switch audio mode only when needed
+  const setAudioModeForPlayback = async () => {
+    if (currentAudioModeRef.current === 'playback') return; // Already in playback mode
     await Audio.setAudioModeAsync({
       playsInSilentModeIOS: true,
       allowsRecordingIOS: false,
@@ -54,6 +52,27 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
       playThroughEarpieceAndroid: false,
       staysActiveInBackground: false,
     });
+    currentAudioModeRef.current = 'playback';
+  };
+
+  const setAudioModeForRecording = async () => {
+    if (currentAudioModeRef.current === 'recording') return; // Already in recording mode
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: true,
+      playsInSilentModeIOS: true,
+    });
+    currentAudioModeRef.current = 'recording';
+  };
+
+  async function speakWithOpenAI(text: string) {
+    /* stop whatever is already playing */
+    if (soundRef.current) {
+      await soundRef.current.unloadAsync();
+      soundRef.current = null;
+    }
+
+    /* OPTIMIZATION: Only switch audio mode if not already in playback mode */
+    await setAudioModeForPlayback();
 
     /* fetch & play OpenAI TTS */
     const buf = await fetchTTS(text);                   // ArrayBuffer
@@ -78,7 +97,8 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== 'granted') return;
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      /* OPTIMIZATION: Only switch audio mode if not already in recording mode */
+      await setAudioModeForRecording();
       const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       setRecording(recording);
     } catch (e) { }
@@ -155,26 +175,35 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
       if (!res.ok) throw new Error('Server error');
       const json = await res.json();
 
-      //ensure firestore session
-      let sid = sessionId;
-      if (!sid) {
-        sid = await startSession(uid, jlptLevel || '', grammarPrompt || '');
-        if (!sid) throw new Error('Failed to start session');
-        setSessionId(sid);
-      }
-
-      //record turn in firestore
-      await addTurn(uid, sid, {
-        userText: speech,
-        partnerReply: json.response,
-        feedback: json.feedback,
-        jlptLevel: jlptLevel || '',
-        grammarPrompt: grammarPrompt || '',
-      });
-
+      // OPTIMIZATION: Update UI and start TTS immediately (don't wait for Firestore)
       setTalkState({ partner: json.response, feedback: json.feedback });
-      speakWithOpenAI(json.response); // speak the response
+      speakWithOpenAI(json.response); // speak the response immediately
       setInputText('');
+
+      (async () => {
+        try {
+          let sid = sessionId;
+          if (!sid) {
+            sid = await startSession(uid, jlptLevel || '', grammarPrompt || '');
+            if (!sid) {
+              console.error('Failed to start session');
+              return;
+            }
+            setSessionId(sid);
+          }
+
+          // Record turn in firestore
+          await addTurn(uid, sid, {
+            userText: speech,
+            partnerReply: json.response,
+            feedback: json.feedback,
+            jlptLevel: jlptLevel || '',
+            grammarPrompt: grammarPrompt || '',
+          });
+        } catch (err) {
+          console.error('Background Firestore operation failed:', err);
+        }
+      })();
     } catch (e) { }
     setLoading(false);
   };
