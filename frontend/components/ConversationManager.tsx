@@ -65,30 +65,53 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
   };
 
   async function speakWithOpenAI(text: string) {
-    /* stop whatever is already playing */
-    if (soundRef.current) {
-      await soundRef.current.unloadAsync();
-      soundRef.current = null;
-    }
+    const startTime = performance.now();
+    console.log('🔊 [TTS] Starting TTS for:', text.substring(0, 50) + '...');
 
-    /* OPTIMIZATION: Only switch audio mode if not already in playback mode */
-    await setAudioModeForPlayback();
-
-    /* fetch & play OpenAI TTS */
-    const buf = await fetchTTS(text);                   // ArrayBuffer
-    const uri = `data:audio/mp3;base64,${Buffer.from(buf).toString('base64')}`;
-    const { sound } = await Audio.Sound.createAsync(
-      { uri },
-      { shouldPlay: true }
-    );
-    soundRef.current = sound;
-
-    sound.setOnPlaybackStatusUpdate((st) => {
-      if (st.isLoaded && st.didJustFinish) {
-        sound.unloadAsync();
+    try {
+      /* stop whatever is already playing */
+      if (soundRef.current) {
+        await soundRef.current.unloadAsync();
         soundRef.current = null;
+        console.log('🔊 [TTS] Stopped previous playback');
       }
-    });
+
+      /* OPTIMIZATION: Only switch audio mode if not already in playback mode */
+      const modeStart = performance.now();
+      await setAudioModeForPlayback();
+      console.log(`🔊 [TTS] Audio mode set in ${(performance.now() - modeStart).toFixed(0)}ms`);
+
+      /* fetch & play OpenAI TTS */
+      const fetchStart = performance.now();
+      console.log('📤 [TTS] Fetching audio from TTS API...');
+      const buf = await fetchTTS(text);
+      console.log(`📥 [TTS] Audio received in ${(performance.now() - fetchStart).toFixed(0)}ms (${buf.byteLength} bytes)`);
+
+      const encodeStart = performance.now();
+      const uri = `data:audio/mp3;base64,${Buffer.from(buf).toString('base64')}`;
+      console.log(`🔊 [TTS] Base64 encoded in ${(performance.now() - encodeStart).toFixed(0)}ms`);
+
+      const playStart = performance.now();
+      const { sound } = await Audio.Sound.createAsync(
+        { uri },
+        { shouldPlay: true }
+      );
+      console.log(`▶️ [TTS] Playback started in ${(performance.now() - playStart).toFixed(0)}ms`);
+      console.log(`⏱️ [TTS] Total TTS pipeline: ${(performance.now() - startTime).toFixed(0)}ms`);
+
+      soundRef.current = sound;
+
+      sound.setOnPlaybackStatusUpdate((st) => {
+        if (st.isLoaded && st.didJustFinish) {
+          console.log('✅ [TTS] Playback finished');
+          sound.unloadAsync();
+          soundRef.current = null;
+        }
+      });
+    } catch (err) {
+      console.error('❌ [TTS] Error:', err);
+      alert(`TTS Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
   }
 
 
@@ -116,29 +139,57 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
 
   // -- Handle STT & auto-send to API
   const handleTranscribe = async (uri: string) => {
+    const startTime = performance.now();
+    console.log('🎤 [STT] Starting transcription...');
+
     try {
       const formData = new FormData();
       formData.append('file', { uri, name: 'audio.m4a', type: 'audio/m4a' } as any);
 
       // Get auth token
+      const tokenStart = performance.now();
       const user = auth.currentUser;
       const token = user ? await user.getIdToken() : null;
+      console.log(`🔑 [STT] Auth token retrieved in ${(performance.now() - tokenStart).toFixed(0)}ms`);
+
       const headers: HeadersInit = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      const fetchStart = performance.now();
+      console.log('📤 [STT] Uploading audio to backend...');
       const response = await fetch(`${API_BASE_URL}/api/speech-to-text`, {
         method: 'POST',
         headers,
         body: formData
       });
+
+      console.log(`📥 [STT] Response received in ${(performance.now() - fetchStart).toFixed(0)}ms, status: ${response.status}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ [STT] Server error:', response.status, errorText);
+        alert(`Speech-to-text failed: ${response.status} - ${errorText}`);
+        return;
+      }
+
       const data = await response.json();
       const text = data.text || '';
 
+      console.log(`✅ [STT] Transcription complete in ${(performance.now() - startTime).toFixed(0)}ms`);
+      console.log(`📝 [STT] Transcribed text: "${text}"`);
+
+      if (!text.trim()) {
+        console.warn('⚠️ [STT] Empty transcription received');
+        alert('No speech detected. Please try again.');
+        return;
+      }
+
       await sendSpeech(text);
     } catch (err) {
-      console.warn(err);
+      console.error('❌ [STT] Error:', err);
+      alert(`Transcription error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       try {
         await FileSystem.deleteAsync(uri, { idempotent: true });
@@ -153,43 +204,77 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
     if (!speech.trim()) return;
 
     if (!uid) {
-      console.warn('User not signed in');
-      return;                                   // or redirect to /auth/sign-in
+      console.warn('⚠️ [SEND] User not signed in');
+      alert('Please sign in to continue');
+      return;
     }
+
+    const startTime = performance.now();
+    console.log('🚀 [SEND] Starting response generation...');
+    console.log(`📝 [SEND] User input: "${speech}"`);
 
     setLoading(true);
     try {
       // Get auth token
+      const tokenStart = performance.now();
       const user = auth.currentUser;
       const token = user ? await user.getIdToken() : null;
+      console.log(`🔑 [SEND] Auth token retrieved in ${(performance.now() - tokenStart).toFixed(0)}ms`);
+
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      const fetchStart = performance.now();
+      console.log('📤 [SEND] Requesting LLM response...');
       const res = await fetch(`${API_BASE_URL}/api/generate-response`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ speech, jlptLevel, grammarPrompt }),
       });
-      if (!res.ok) throw new Error('Server error');
+
+      console.log(`📥 [SEND] LLM response received in ${(performance.now() - fetchStart).toFixed(0)}ms, status: ${res.status}`);
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('❌ [SEND] Server error:', res.status, errorText);
+        alert(`Response generation failed: ${res.status} - ${errorText}`);
+        setLoading(false);
+        return;
+      }
+
       const json = await res.json();
+      console.log(`✅ [SEND] Response parsed: "${json.response?.substring(0, 50)}..."`);
+      console.log(`📊 [SEND] Feedback: "${json.feedback?.substring(0, 50)}..."`);
 
       // OPTIMIZATION: Update UI and start TTS immediately (don't wait for Firestore)
+      const uiUpdateStart = performance.now();
       setTalkState({ partner: json.response, feedback: json.feedback });
+      console.log(`🖥️ [SEND] UI updated in ${(performance.now() - uiUpdateStart).toFixed(0)}ms`);
+
+      const ttsStart = performance.now();
       speakWithOpenAI(json.response); // speak the response immediately
+      console.log(`🔊 [SEND] TTS initiated in ${(performance.now() - ttsStart).toFixed(0)}ms`);
+      console.log(`⏱️ [SEND] Total time to TTS: ${(performance.now() - startTime).toFixed(0)}ms`);
+
       setInputText('');
 
+      // Background Firestore operations
       (async () => {
+        const firestoreStart = performance.now();
+        console.log('💾 [FIRESTORE] Background save started...');
         try {
           let sid = sessionId;
           if (!sid) {
+            console.log('💾 [FIRESTORE] Creating new session...');
             sid = await startSession(uid, jlptLevel || '', grammarPrompt || '');
             if (!sid) {
-              console.error('Failed to start session');
+              console.error('❌ [FIRESTORE] Failed to start session');
               return;
             }
             setSessionId(sid);
+            console.log(`✅ [FIRESTORE] Session created: ${sid}`);
           }
 
           // Record turn in firestore
@@ -200,11 +285,15 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
             jlptLevel: jlptLevel || '',
             grammarPrompt: grammarPrompt || '',
           });
+          console.log(`✅ [FIRESTORE] Turn saved in ${(performance.now() - firestoreStart).toFixed(0)}ms`);
         } catch (err) {
-          console.error('Background Firestore operation failed:', err);
+          console.error('❌ [FIRESTORE] Background operation failed:', err);
         }
       })();
-    } catch (e) { }
+    } catch (e) {
+      console.error('❌ [SEND] Unexpected error:', e);
+      alert(`Error: ${e instanceof Error ? e.message : 'Unknown error occurred'}`);
+    }
     setLoading(false);
   };
 
