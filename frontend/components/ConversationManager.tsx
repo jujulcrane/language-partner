@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
 import Talk from '@/components/Talk';
+import FastModeManager from '@/components/FastModeManager';
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import { Buffer } from 'buffer';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,7 +28,7 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
   const soundRef = useRef<Audio.Sound | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
-  const [mode, setMode] = useState<'text' | 'mic'>('text');
+  const [mode, setMode] = useState<'text' | 'mic' | 'fast'>('text');
   const [inputText, setInputText] = useState('');
   const [recording, setRecording] = useState<Audio.Recording | undefined>(undefined);
   const [loading, setLoading] = useState(false);
@@ -318,40 +319,53 @@ const ConversationManager = ({ jlptLevel = undefined, grammarPrompt = undefined 
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setMode('mic')} style={{
           backgroundColor: mode === 'mic' ? '#53C1DE' : '#ccc',
+          padding: 8, borderRadius: 6, marginRight: 10
+        }}>
+          <Text style={{ color: 'white', fontWeight: 'bold' }}>Mic (Detailed)</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setMode('fast')} style={{
+          backgroundColor: mode === 'fast' ? '#4CAF50' : '#ccc',
           padding: 8, borderRadius: 6
         }}>
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>Mic</Text>
+          <Text style={{ color: 'white', fontWeight: 'bold' }}>⚡ Fast</Text>
         </TouchableOpacity>
       </View>
 
-      <Talk
-        mode={mode}
-        inputText={inputText}
-        setInputText={setInputText}
-        onSend={() => sendSpeech(inputText)}
-        partner={talkState.partner}
-        feedback={talkState.feedback}
-        loading={loading}
-        disabled={loading}
-      />
-
-      {/* Only show MIC controls if mode === 'mic' */}
-      {(mode === 'mic') && (
-        <View style={{ alignSelf: 'center', margin: 16 }}>
-          <TouchableOpacity
-            onPress={recording ? stopRecording : startRecording}
-            style={{
-              width: 70, height: 70, borderRadius: 35,
-              justifyContent: 'center', alignItems: 'center',
-              backgroundColor: recording ? '#FFC107' : '#53C1DE',
-              opacity: loading ? 0.6 : 1
-            }}
+      {/* Fast Mode: Real-time voice conversation */}
+      {mode === 'fast' ? (
+        <FastModeManager jlptLevel={jlptLevel} grammarPrompt={grammarPrompt} />
+      ) : (
+        <>
+          <Talk
+            mode={mode}
+            inputText={inputText}
+            setInputText={setInputText}
+            onSend={() => sendSpeech(inputText)}
+            partner={talkState.partner}
+            feedback={talkState.feedback}
+            loading={loading}
             disabled={loading}
-          >
-            <Ionicons name={recording ? 'stop-circle' : 'mic-circle'} size={44} color="white" />
-          </TouchableOpacity>
-          {loading ? <ActivityIndicator style={{ marginTop: 16 }} /> : null}
-        </View>
+          />
+
+          {/* Only show MIC controls if mode === 'mic' */}
+          {(mode === 'mic') && (
+            <View style={{ alignSelf: 'center', margin: 16 }}>
+              <TouchableOpacity
+                onPress={recording ? stopRecording : startRecording}
+                style={{
+                  width: 70, height: 70, borderRadius: 35,
+                  justifyContent: 'center', alignItems: 'center',
+                  backgroundColor: recording ? '#FFC107' : '#53C1DE',
+                  opacity: loading ? 0.6 : 1
+                }}
+                disabled={loading}
+              >
+                <Ionicons name={recording ? 'stop-circle' : 'mic-circle'} size={44} color="white" />
+              </TouchableOpacity>
+              {loading ? <ActivityIndicator style={{ marginTop: 16 }} /> : null}
+            </View>
+          )}
+        </>
       )}
     </View>
   );

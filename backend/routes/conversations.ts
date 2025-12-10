@@ -199,5 +199,49 @@ router.delete("/api/users/:uid/sessions/:sid", verifyFirebaseToken, verifyUserOw
   }
 });
 
+/* ───────────────────────────────────────────────
+   6)  SAVE simplified session summary (for Fast Mode)
+   POST /api/users/:uid/sessions/summary
+   body: { mode: "realtime", summary: "...", duration: 120 }
+───────────────────────────────────────────────── */
+router.post("/api/users/:uid/sessions/summary", verifyFirebaseToken, verifyUserOwnership, async (req, res) => {
+  try {
+    const { uid } = req.params;
+    const { mode, summary, duration } = req.body;
+
+    // Validate input
+    if (!mode || !summary) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        required: ['mode', 'summary'],
+      });
+    }
+
+    // Save simplified session to sessions-realtime collection
+    const doc = await db
+      .collection("users")
+      .doc(uid)
+      .collection("sessions-realtime")
+      .add({
+        mode: mode || 'realtime',
+        summary,
+        duration: duration || 0,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+
+    console.log(`💾 [FIRESTORE] Saved realtime session summary:`, {
+      uid,
+      sessionId: doc.id,
+      summaryLength: summary.length,
+      duration,
+    });
+
+    res.status(201).json({ sessionId: doc.id, ok: true });
+  } catch (e) {
+    console.error('❌ [FIRESTORE] Failed to save session summary:', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
 
 export default router;
