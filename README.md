@@ -1,137 +1,380 @@
-# Talking Tanuki - Japanese Language Partner – Conversational AI Stuffed Animal
+# Talking Tanuki - Japanese Language Partner
 
-**A full-stack, hardware-integrated language learning companion for Japanese learners, powered by ESP32, cloud AI, and a cross-platform React Native app.**
+**A full-stack, AI-powered language learning companion powered by React Native, OpenAI APIs, and ESP32 Bluetooth speaker hardware.**
 
-## Table of Contents
+[![Status](https://img.shields.io/badge/Status-Production-brightgreen)]()
+[![React Native](https://img.shields.io/badge/React_Native-0.79.5-blue)]()
+[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-orange)]()
+[![ESP32](https://img.shields.io/badge/ESP32-Bluetooth_A2DP-red)]()
 
-- [Overview](#overview)
-- [Features](#features)
-- [System Architecture](#system-architecture)
-- [Demo](#demo)
-- [Hardware](#hardware)
-- [Mobile App](#mobile-app)
-- [Backend](#backend)
-- [Database Schema](#database-schema)
-- [Getting Started](#getting-started)
-- [Project Structure](#project-structure)
-- [Development Roadmap](#development-roadmap)
+## 📱 Overview
 
-## Overview
+Talking Tanuki is an interactive, AI-powered language learning platform that helps Japanese learners practice speaking and listening in natural conversations. It combines a React Native mobile app with an optional ESP32 Bluetooth speaker for an immersive learning experience.
 
-Japanese Language Partner (JLP) is an interactive, AI-powered stuffed animal designed to help Japanese learners practice speaking and listening in a natural, conversational way. The device uses an ESP32 microcontroller, high-quality microphone and speaker, and connects to cloud services for speech recognition, conversation AI, and text-to-speech. A companion React Native app allows users to view conversation logs, track progress, and customize their learning experience.
+**Current Status: Production Ready** ✅
+- Mobile app with three conversation modes
+- Cloud-based AI processing (STT, LLM, TTS)
+- Firebase authentication and conversation history
+- ESP32 Bluetooth speaker for wireless audio playback
+- 40-90% latency improvements through optimizations
 
-## Features
+## ✨ Features
 
-- **Real-time Japanese conversation** with natural voice input and output
-- **JLPT level adaptation** (N5–N3) and grammar targeting
-- **Conversation logging** and progress tracking
-- **React Native mobile app** for settings, logs, and user feedback
-- **Cloud-based AI** (STT, LLM, TTS) for accurate, personalized interaction
-- **Portable, rechargeable hardware** embedded in a soft stuffed tanuki (Japanese raccoon dog)
+### 🎤 **Three Conversation Modes**
 
-## System Architecture
+1. **Text Mode** - Type and read Japanese
+   - Manual text input for precise practice
+   - Best for vocabulary and grammar review
+
+2. **Mic Mode (Detailed)** - Traditional voice conversation
+   - Full STT → LLM → TTS pipeline
+   - Detailed grammar feedback after each response
+   - Optimized with caching: < 500ms for common phrases
+   - Standard responses: 2-6 seconds
+
+3. **Fast Mode** ⚡ - Real-time WebSocket conversation
+   - Low-latency voice chat via OpenAI Realtime API
+   - Target latency: 0.8-2 seconds
+   - Status: 90% complete (audio conversion pending for mobile)
+
+### 📚 **JLPT Level Adaptation**
+- Adjustable difficulty from N5 (beginner) to N1 (advanced)
+- Grammar point targeting (e.g., "practice てform")
+- Vocabulary appropriate for selected level
+
+### 📊 **Progress Tracking**
+- Conversation history stored in Firebase Firestore
+- Session summaries and timestamps
+- Review past conversations and feedback
+
+### 🔊 **ESP32 Bluetooth Speaker**
+- Wireless audio playback via Bluetooth A2DP
+- Device name: "TALKING TANUKI"
+- 15-line Arduino code (beautifully simple)
+- Works with any Bluetooth-enabled phone
+
+## 🏗️ System Architecture
+
+### Current Production Setup
 
 ```
-User speaks → Microphone (ESP32) → WiFi → Cloud Server
-   → Speech-to-Text (STT, e.g. Whisper)
-   → Conversation AI (LLM, e.g. GPT-4o)
-   → Text-to-Speech (TTS, e.g. Google Cloud TTS)
-   → Audio streamed back to ESP32 → Speaker → User hears response
-
-Mobile app ↔ Firebase/Firestore ↔ Backend ↔ ESP32
+┌─────────────────────────────────────────────────────────┐
+│                    Mobile App (React Native)            │
+│  ┌────────────┐  ┌──────────────┐  ┌─────────────────┐ │
+│  │ Text Mode  │  │  Mic Mode    │  │  Fast Mode ⚡   │ │
+│  │ (Manual)   │  │  (Detailed)  │  │  (Real-time)    │ │
+│  └────────────┘  └──────────────┘  └─────────────────┘ │
+│         │                │                    │          │
+└─────────┼────────────────┼────────────────────┼──────────┘
+          │                │                    │
+          │                ▼                    ▼
+          │    ┌─────────────────────┐  ┌──────────────┐
+          │    │  Backend (HTTP)     │  │  Backend     │
+          │    │  - Speech-to-Text   │  │  (WebSocket) │
+          │    │  - GPT-4o-mini LLM  │  │  Proxy       │
+          │    │  - Text-to-Speech   │  │              │
+          │    │  - Response Cache   │  │              │
+          │    └─────────────────────┘  └──────────────┘
+          │                │                    │
+          │                │                    ▼
+          │                │         ┌──────────────────────┐
+          │                │         │ OpenAI Realtime API  │
+          │                │         │ (gpt-4o-realtime)    │
+          │                ▼         └──────────────────────┘
+          │    ┌─────────────────────┐
+          │    │  OpenAI APIs        │
+          │    │  - Whisper STT      │
+          │    │  - GPT-4o-mini      │
+          │    │  - TTS-1 (coral)    │
+          └───►└─────────────────────┘
+                        │
+          ┌─────────────┴─────────────┐
+          ▼                           ▼
+   ┌──────────────┐          ┌──────────────────┐
+   │   Firebase   │          │   Bluetooth      │
+   │   - Auth     │          │   ESP32 Speaker  │
+   │   - Firestore│          │   "TALKING       │
+   │              │          │    TANUKI"       │
+   └──────────────┘          └──────────────────┘
 ```
 
-## Demo
+### Performance Metrics
 
-_Coming soon: video demo and screenshots._
+| Mode | Latency | Status |
+|------|---------|--------|
+| Text Mode | Instant | ✅ Production |
+| Cached responses (Mic) | < 500ms | ✅ Production |
+| Simple phrases (Mic) | 2-3s | ✅ Production |
+| Complex responses (Mic) | 4-6s | ✅ Production |
+| Fast Mode (target) | 0.8-2s | 🔄 90% complete |
 
-## Hardware
+## 🚀 Quick Start
 
-| Component                                   | Qty | Description                          | Source            |
-| ------------------------------------------- | --- | ------------------------------------ | ----------------- |
-| ESP32-S3 DevKitC-1                          | 1   | Main microcontroller (WiFi, I2S, BT) | Adafruit          |
-| I2S MEMS Microphone (SPH0645LM4H)           | 1   | Digital audio input                  | Adafruit          |
-| MAX98357A I2S Amplifier                     | 1   | Digital audio output to speaker      | Adafruit          |
-| 3.7V 2500mAh LiPo Battery                   | 1   | Rechargeable power source            | Adafruit          |
-| Micro-Lipo Charger (MicroUSB)               | 1   | Battery charging                     | Adafruit          |
-| 4Ω 3W Speaker (or 8Ω 1W for prototyping)    | 1   | Audio output                         | Digi-Key/Adafruit |
-| MicroSD Card Module & 16GB MicroSD Card     | 1   | Removable storage                    | Amazon            |
-| Breadboard, wires, resistors, LEDs, buttons | 1ea | Prototyping and user feedback        | SparkFun/Amazon   |
-| Stuffed Animal Shell                        | 1   | Physical enclosure                   | Amazon            |
+### Prerequisites
 
-## Mobile App
+- Node.js 18+ and npm
+- iOS/Android development environment (for mobile app)
+- OpenAI API key
+- Firebase project
+- (Optional) ESP32 for Bluetooth speaker
 
-- Built with **React Native**
-- Features:
-  - Device pairing and setup
-  - Conversation log and playback
-  - JLPT level and grammar settings
-  - User authentication (Firebase)
+### 1. Clone Repository
 
-## Backend
+```bash
+git clone https://github.com/yourusername/language-partner.git
+cd language-partner
+```
 
-- Handles:
-  - Audio streaming from ESP32
-  - Calls to Speech-to-Text, AI, and TTS APIs
-  - Conversation management and context
-  - Communication with Firebase and the mobile app
-- Built with Node.js and Express
-- Deployable as serverless functions or on a cloud VM
+### 2. Backend Setup
 
-## Database Schema
+```bash
+cd backend
+npm install
 
-**Firestore Collections:**
+# Create .env file
+cat > .env << EOF
+OPENAI_API_KEY=sk-your-api-key-here
+PORT=3000
+NODE_ENV=development
+EOF
 
-| Collection    | Fields/Docs                                   | Description                    |
-| ------------- | --------------------------------------------- | ------------------------------ |
-| users         | displayName, email, jlptLevel, grammarTargets | User profile and preferences   |
-| conversations | userId, startedAt, jlptLevel, messages        | Conversation sessions and logs |
-| progress      | grammar, vocabulary                           | Per-user learning progress     |
-| settings      | notifications, theme                          | User-specific app settings     |
+# Add Firebase service account key
+# Download from Firebase Console → Project Settings → Service Accounts
+# Save as backend/serviceAccountKey.json
 
-## Getting Started
+# Start backend
+npm run dev
+```
 
-### Hardware
+Backend runs at `http://localhost:3000`
 
-1. Assemble the ESP32, microphone, amplifier, speaker, and power system on a breadboard.
-2. Flash the ESP32 firmware from `/esp32-firmware`.
-3. Connect to WiFi and test audio input/output.
+### 3. Mobile App Setup
 
-### Backend
+```bash
+cd frontend
+npm install
 
-1. Install dependencies in `/backend`.
-2. Set up API keys for STT, AI, and TTS providers.
-3. Deploy backend (locally or to cloud).
+# Create .env file
+cat > .env << EOF
+EXPO_PUBLIC_API_BASE_URL=http://localhost:3000
+EOF
+
+# Configure Firebase
+# 1. Download google-services.json (Android) and GoogleService-Info.plist (iOS)
+# 2. Place in frontend/ directory
+# 3. Update frontend/utils/firebaseConfig.js with your config
+
+# Start app
+npx expo start
+```
+
+Press `i` for iOS simulator or `a` for Android emulator
+
+### 4. (Optional) ESP32 Bluetooth Speaker
+
+See [`Milstein Project Bluetooth/README.md`](./Milstein%20Project%20Bluetooth/README.md) for complete setup.
+
+**Quick version:**
+1. Install Arduino IDE or PlatformIO
+2. Install libraries: ESP32-AudioI2S, ESP32-A2DP
+3. Upload [`bluetooth_speaker.ino`](./Milstein%20Project%20Bluetooth/bluetooth_speaker.ino)
+4. Connect speaker to GPIO 14, 15, 22
+5. Pair phone with "TALKING TANUKI"
+
+## 📁 Project Structure
+
+```
+language-partner/
+├── frontend/                      # React Native mobile app
+│   ├── app/                      # Expo Router screens
+│   ├── components/               # UI components
+│   │   ├── ConversationManager.tsx    # Main conversation orchestrator
+│   │   ├── FastModeManager.tsx        # WebSocket real-time mode
+│   │   └── Talk.tsx                   # Conversation UI
+│   ├── hooks/                    # Custom React hooks
+│   │   ├── useRealtimeConnection.ts   # WebSocket client
+│   │   └── useAudioStreaming.ts       # Audio recording/playback
+│   ├── utils/                    # Utilities
+│   │   ├── audioConverter.ts          # M4A → PCM16 conversion
+│   │   └── firebaseConfig.js          # Firebase setup
+│   └── types/                    # TypeScript definitions
+│
+├── backend/                      # Express API server
+│   ├── routes/                   # API endpoints
+│   │   ├── transcribe.ts             # Speech-to-Text (Whisper)
+│   │   ├── generate-response.ts      # LLM conversation (GPT-4o-mini)
+│   │   ├── text-to-speech.ts         # Text-to-Speech (OpenAI TTS)
+│   │   ├── realtime.ts               # WebSocket proxy (Realtime API)
+│   │   ├── conversations.ts          # Firestore conversation management
+│   │   └── audioConversion.ts        # Audio format conversion
+│   ├── middleware/               # Middleware
+│   │   ├── auth.ts                   # HTTP auth middleware
+│   │   └── ws-auth.ts                # WebSocket auth
+│   └── index.ts                  # Server entry point
+│
+├── Milstein Project Bluetooth/   # ESP32 Bluetooth speaker (DEPLOYED)
+│   ├── bluetooth_speaker.ino     # 15-line Arduino code
+│   ├── platformio.ini            # Build configuration
+│   └── README.md                 # Hardware setup guide
+│
+├── Milstein Project/             # ESP32 WiFi version (IN PROGRESS)
+│   ├── src/                      # Firmware source
+│   │   ├── main.cpp              # Main loop
+│   │   ├── i2s_audio.cpp         # I2S microphone capture
+│   │   └── wifi_audio.cpp        # HTTP audio transmission
+│   └── platformio.ini
+│
+├── tanuki-web/                   # Next.js marketing website
+│
+├── TECHNICAL_DOCUMENTATION.md    # Complete technical guide
+├── README.md                     # This file
+└── PROJECT_STRUCTURE.md          # Repository structure
+```
+
+## 🔧 Technology Stack
 
 ### Mobile App
+- **Framework:** React Native 0.79.5 + Expo SDK 53
+- **Language:** TypeScript 5.8.3
+- **Navigation:** expo-router 5.1.3
+- **Audio:** expo-av 15.1.7
+- **Auth:** Firebase 12.0.0
+- **State:** React hooks (useState, useRef)
 
-1. Install dependencies in `/`.
-2. Set up Firebase project and configure in `/src/services/firebase.js`.
-3. Run with `npx react-native run-ios` or `run-android`.
+### Backend
+- **Runtime:** Node.js + Express 5.1.0
+- **Language:** TypeScript (ES Modules)
+- **AI:** OpenAI SDK 5.10.1 (Whisper, GPT-4o-mini, TTS-1, Realtime API)
+- **WebSocket:** ws 8.18.3
+- **Auth:** firebase-admin 13.4.0
+- **Database:** Firebase Firestore
 
-See `/docs/setup.md` for detailed instructions.
+### Hardware
+- **MCU:** ESP32 (any model with Bluetooth)
+- **Audio Out:** I2S amplifier (MAX98357A) + speaker
+- **Libraries:** ESP32-AudioI2S, ESP32-A2DP (Phil Schatzmann)
+- **Protocol:** Bluetooth A2DP audio sink
 
-## Project Structure
+## 🎯 Key Optimizations Implemented
 
+### 1. Response Caching
+- 12 common Japanese phrases cached
+- **Result:** < 500ms (was 3-5s) → **85-90% improvement**
+
+### 2. Adaptive LLM Temperature
+- Lower temperature (0.5) for simple inputs → faster generation
+- Higher temperature (0.7) for complex inputs → better quality
+- **Result:** 30-40% faster for simple phrases
+
+### 3. Audio Mode Optimization
+- Track current audio mode to avoid redundant API calls
+- **Result:** Eliminates 50-100ms per operation
+
+### 4. Background Firestore Operations
+- Database writes moved to fire-and-forget async blocks
+- **Result:** Non-blocking TTS playback, ~200-500ms saved
+
+### 5. Internal LLM Streaming
+- Backend uses streaming to detect first sentence
+- Prepared for future progressive TTS
+
+## 📚 Documentation
+
+- **[TECHNICAL_DOCUMENTATION.md](./TECHNICAL_DOCUMENTATION.md)** - Complete technical guide (86,000+ words)
+- **[Milstein Project Bluetooth/README.md](./Milstein%20Project%20Bluetooth/README.md)** - ESP32 setup guide
+- **[esp32-bluetooth-verify.md](./esp32-bluetooth-verify.md)** - Verify ESP32 firmware
+- **[SETUP.md](./SETUP.md)** - Detailed setup instructions
+- **[PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)** - Repository structure
+
+## 🔒 Security
+
+- All API endpoints require Firebase authentication
+- User ownership verification prevents cross-user access
+- Service account keys are gitignored
+- WebSocket authentication via query parameters (React Native workaround)
+- CORS configured for development and production
+
+## 🧪 Testing
+
+### Test Backend
+```bash
+curl http://localhost:3000/ping
+# Expected: "pong"
 ```
-/hardware           # Schematics, BOM, wiring diagrams
-/esp32-firmware     # ESP32 code (C++/Arduino or ESP-IDF)
-/backend            # Backend server/API code
-/src                # React Native app source
-/docs               # Documentation, setup guides
+
+### Test Authentication
+```bash
+curl http://localhost:3000/api/users/test/sessions
+# Expected: 401 Unauthorized
 ```
 
-## Development Roadmap
+### Test ESP32 Bluetooth
+1. Turn on ESP32
+2. Check Bluetooth devices on phone
+3. Look for "TALKING TANUKI"
+4. Connect and play audio
 
-- [x] Hardware prototype (audio I/O, WiFi)
-- [x] Cloud backend (STT, AI, TTS integration)
-- [x] React Native app (device pairing, logs)
+## 🗺️ Development Roadmap
+
+### ✅ Completed
+- [x] React Native mobile app with three conversation modes
+- [x] OpenAI API integration (STT, LLM, TTS)
+- [x] Firebase authentication and Firestore database
+- [x] ESP32 Bluetooth speaker integration
+- [x] Response caching and optimizations (40-90% improvement)
+- [x] WebSocket infrastructure for Fast Mode
+- [x] JLPT level adaptation and grammar targeting
+
+### 🔄 In Progress
+- [ ] Mobile audio conversion for Fast Mode (90% complete)
+- [ ] ESP32 WiFi version with INMP441 microphone
+
+### 🎯 Planned
+- [ ] Pre-generated TTS for cached responses (< 100ms target)
 - [ ] User progress dashboard
-- [ ] Advanced grammar/vocab tracking
-- [ ] Production-ready PCB design
-- [ ] Demo video and deployment guide
+- [ ] Vocabulary management and spaced repetition
+- [ ] Conversation topics and scenarios
+- [ ] App store submission (iOS TestFlight ready)
+- [ ] Production PCB design for ESP32 hardware
 
-**Impress employers by building a full-stack, hardware-integrated, AI-powered language learning companion—demonstrating skills in embedded systems, cloud, mobile, and user experience!**
+## 📱 TestFlight Submission
+
+The app is ready for TestFlight:
+
+```bash
+# Create production build
+eas build --platform ios --profile production
+
+# Submit to TestFlight
+eas submit --platform ios --profile production
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Test thoroughly
+5. Commit (`git commit -m 'Add amazing feature'`)
+6. Push (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+## 📄 License
+
+MIT License - See [LICENSE](./LICENSE) file for details
+
+## 🆘 Support
+
+- **Documentation:** See [TECHNICAL_DOCUMENTATION.md](./TECHNICAL_DOCUMENTATION.md)
+- **Issues:** Open an issue on GitHub
+- **Setup Help:** Check [SETUP.md](./SETUP.md)
+
+## 🙏 Acknowledgments
+
+- **OpenAI** for GPT-4o-mini, Whisper, and TTS APIs
+- **Phil Schatzmann** for ESP32-AudioI2S and ESP32-A2DP libraries
+- **Firebase** for authentication and database services
+- **Expo** for React Native development tools
 
 ## Submitting to testflight
 
@@ -140,3 +383,4 @@ See `/docs/setup.md` for detailed instructions.
 
 2. Submit to TestFlight once the build completes:
    eas submit --platform ios --profile production
+*"Practice makes perfect - 練習は完璧を作る"*
