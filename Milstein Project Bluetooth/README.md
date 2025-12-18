@@ -1,6 +1,6 @@
 # Talking Tanuki - Bluetooth Speaker Version
 
-This is the **currently deployed** firmware on your ESP32 device. It's a simple Bluetooth A2DP audio receiver that turns your ESP32 into a wireless speaker.
+This is the **currently deployed** firmware on the ESP32 device. It's a simple Bluetooth A2DP audio receiver that turns our ESP32 into a wireless speaker.
 
 ## 🎯 What This Does
 
@@ -9,12 +9,14 @@ Phone (Talking Tanuki App) → Bluetooth → ESP32 → I2S Amplifier → Speaker
 ```
 
 The phone app:
+
 1. Captures audio from phone microphone
 2. Sends to backend for AI processing
 3. Receives TTS audio response
 4. Plays audio via Bluetooth to ESP32
 
 The ESP32:
+
 1. Receives Bluetooth audio
 2. Outputs to speaker via I2S
 3. That's it! (DMA-driven, no code in loop)
@@ -43,6 +45,7 @@ MAX98357A Speaker Outputs:
 ## 📦 Required Libraries
 
 ### Arduino IDE
+
 1. Open Arduino IDE
 2. Go to **Tools → Manage Libraries**
 3. Search and install:
@@ -50,7 +53,9 @@ MAX98357A Speaker Outputs:
    - **ESP32-A2DP** by Phil Schatzmann
 
 ### PlatformIO
+
 Already configured in `platformio.ini`:
+
 ```ini
 lib_deps =
     https://github.com/pschatzmann/arduino-audio-tools
@@ -60,6 +65,7 @@ lib_deps =
 ## 🚀 How to Upload
 
 ### Arduino IDE
+
 1. Connect ESP32 to computer via USB
 2. **Tools → Board → ESP32 Dev Module** (or your specific ESP32 board)
 3. **Tools → Port** → Select your ESP32's COM port
@@ -67,11 +73,13 @@ lib_deps =
 5. Wait for "Hard resetting via RTS pin..."
 
 ### PlatformIO (VSCode)
+
 ```bash
 pio run --target upload
 ```
 
 Or use the PlatformIO toolbar:
+
 - Click "Upload" button (→)
 
 ## ✅ How to Test
@@ -86,24 +94,28 @@ Or use the PlatformIO toolbar:
 ## 🔧 Troubleshooting
 
 ### Device not showing up in Bluetooth
+
 - Check ESP32 is powered on
 - Wait 5-10 seconds after power on
 - Try restarting ESP32
 - Check if Bluetooth is enabled on phone
 
 ### No audio output
+
 - Check speaker wiring (positive/negative)
 - Verify I2S pins (GPIO 14, 15, 22)
 - Test with another audio source (music app)
 - Check amplifier power (5V connected)
 
 ### Audio is distorted/crackling
+
 - Check power supply (USB cable quality)
 - Try lower volume on phone
 - Check speaker impedance (3-4 ohms recommended)
 - Verify all GND connections
 
 ### Bluetooth disconnects frequently
+
 - ESP32 might be too far from phone (>10m)
 - Check power supply stability
 - Try disabling WiFi to reduce interference:
@@ -113,24 +125,26 @@ Or use the PlatformIO toolbar:
 
 ## 📊 Comparison: Bluetooth vs WiFi Version
 
-| Feature | **Bluetooth (This Version)** | **WiFi (Other Folder)** |
-|---------|----------------------------|------------------------|
-| **Microphone** | Phone microphone | INMP441 I2S microphone |
-| **Processing** | Phone does all AI | ESP32 → Backend |
-| **Connectivity** | Bluetooth only | WiFi only |
-| **Range** | ~10 meters | WiFi network range |
-| **Power** | Lower | Higher (WiFi radio) |
-| **Code Size** | 15 lines | 300+ lines |
-| **Status** | ✅ Working | 🚧 In progress |
+| Feature          | **Bluetooth (This Version)** | **WiFi (Other Folder)** |
+| ---------------- | ---------------------------- | ----------------------- |
+| **Microphone**   | Phone microphone             | INMP441 I2S microphone  |
+| **Processing**   | Phone does all AI            | ESP32 → Backend         |
+| **Connectivity** | Bluetooth only               | WiFi only               |
+| **Range**        | ~10 meters                   | WiFi network range      |
+| **Power**        | Lower                        | Higher (WiFi radio)     |
+| **Code Size**    | 15 lines                     | 300+ lines              |
+| **Status**       | ✅ Working                   | 🚧 In progress          |
 
 ## 🎨 Customization
 
 ### Change Bluetooth Device Name
+
 ```cpp
 a2dp_sink.start("YOUR NAME HERE");
 ```
 
 ### Change I2S Pins
+
 ```cpp
 cfg.pin_bck = 26;   // Your BCLK pin
 cfg.pin_ws = 27;    // Your LRC pin
@@ -138,7 +152,9 @@ cfg.pin_data = 25;  // Your DIN pin
 ```
 
 ### Adjust Volume (if supported by amplifier)
+
 Some amplifiers like MAX98357A support gain control:
+
 - Connect GAIN pin to GND = 9dB gain
 - Connect GAIN pin to VDD = 12dB gain
 - Connect GAIN pin to GPIO = 15dB gain
@@ -147,6 +163,7 @@ Some amplifiers like MAX98357A support gain control:
 ## 📚 Technical Details
 
 ### Audio Specifications
+
 - **Protocol:** Bluetooth A2DP (Advanced Audio Distribution Profile)
 - **Codec:** SBC (SubBand Coding) - standard Bluetooth audio codec
 - **Sample Rate:** 44.1 kHz (standard CD quality)
@@ -154,11 +171,13 @@ Some amplifiers like MAX98357A support gain control:
 - **Latency:** ~100-200ms (typical Bluetooth latency)
 
 ### Memory Usage
+
 - **Flash:** ~1.2 MB (program storage)
 - **RAM:** ~50-80 KB (runtime memory)
 - **PSRAM:** Not required
 
 ### Power Consumption
+
 - **Idle:** ~80 mA @ 5V
 - **Playing Audio:** ~150-250 mA @ 5V (depends on volume/speaker)
 - **Speaker Amplifier:** Additional 50-500 mA (depends on volume)
