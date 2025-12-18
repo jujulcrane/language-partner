@@ -7,16 +7,14 @@
  *
  * Expo Audio records in M4A format, so we need conversion.
  *
- * CURRENT LIMITATION:
- * React Native doesn't have built-in audio format conversion.
- * This implementation provides placeholder functions with TODOs.
- *
- * FUTURE SOLUTIONS:
- * 1. Use react-native-ffmpeg for native conversion
- * 2. Send M4A to backend, let backend convert and send to OpenAI
- * 3. Use Web Audio API on web platform (if supporting web)
- * 4. Use expo-av with custom native module
+ * IMPLEMENTATION:
+ * - Web platforms: Use Web Audio API for client-side conversion
+ * - Mobile platforms: Upload to backend for FFmpeg conversion
+ * - Backend endpoint: /api/audio/convert-to-pcm16
  */
+
+import { API_BASE_URL } from '@/constants/consts';
+import { auth } from '@/utils/firebaseConfig';
 
 /**
  * Convert M4A audio file to PCM16 chunks
@@ -26,20 +24,22 @@
  */
 export async function convertM4AToPCM16(uri: string): Promise<ArrayBuffer[]> {
   console.log('🔄 [AUDIO-CONVERTER] Converting M4A to PCM16...');
-  console.log('[AUDIO-CONVERTER] URI:', uri);
+  console.log('📁 [AUDIO-CONVERTER] URI:', uri);
 
   try {
     // Check if we're on web platform (Web Audio API available)
     if (typeof AudioContext !== 'undefined' || typeof (window as any).webkitAudioContext !== 'undefined') {
+      console.log('🌐 [AUDIO-CONVERTER] Web platform detected - using Web Audio API');
       return await convertM4AToPCM16Web(uri);
     }
 
-    // For mobile platforms, try backend conversion
-    console.log('📱 [AUDIO-CONVERTER] Mobile platform detected - attempting backend conversion');
+    // For mobile platforms, use backend conversion
+    console.log('📱 [AUDIO-CONVERTER] Mobile platform detected - using backend conversion');
     return await convertM4AToPCM16ViaBackend(uri);
   } catch (error) {
     console.error('❌ [AUDIO-CONVERTER] Conversion failed:', error);
-    return [];
+    console.error('❌ [AUDIO-CONVERTER] Error details:', error instanceof Error ? error.message : String(error));
+    throw error; // Re-throw so caller can handle the error
   }
 }
 
@@ -291,58 +291,72 @@ function writeString(view: DataView, offset: number, string: string): void {
  * @returns Array of PCM16 chunks from backend
  */
 export async function convertM4AToPCM16ViaBackend(uri: string): Promise<ArrayBuffer[]> {
-  console.log('📤 [AUDIO-CONVERTER] Attempting backend conversion...');
-  console.log('[AUDIO-CONVERTER] URI:', uri);
+  console.log('📤 [AUDIO-CONVERTER] Starting backend conversion...');
+  console.log('📁 [AUDIO-CONVERTER] Input URI:', uri);
+  console.log('🌐 [AUDIO-CONVERTER] Backend URL:', API_BASE_URL);
 
   try {
-    // Import API_BASE_URL dynamically to avoid circular dependencies
-    const { API_BASE_URL } = await import('@/constants/consts');
-
     // Create FormData for file upload
     const formData = new FormData();
 
     // React Native requires specific format for file uploads
+    // expo-av provides a file:// URI that can be uploaded directly
     formData.append('audio', {
       uri,
       name: 'audio.m4a',
       type: 'audio/m4a',
     } as any);
 
-    console.log('📤 [AUDIO-CONVERTER] Uploading to backend:', `${API_BASE_URL}/api/audio/convert-to-pcm16`);
+    console.log('📤 [AUDIO-CONVERTER] Uploading to:', `${API_BASE_URL}/api/audio/convert-to-pcm16`);
 
     const response = await fetch(`${API_BASE_URL}/api/audio/convert-to-pcm16`, {
       method: 'POST',
       body: formData,
-      headers: {
-        // Let fetch set Content-Type with boundary for multipart/form-data
-      },
+      // Note: Don't set Content-Type header - let fetch set it with proper boundary
     });
+
+    console.log('📥 [AUDIO-CONVERTER] Response status:', response.status, response.statusText);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ [AUDIO-CONVERTER] Backend response:', response.status, errorText);
-      throw new Error(`Backend conversion failed: ${response.status} ${response.statusText}`);
+      console.error('❌ [AUDIO-CONVERTER] Backend error response:', errorText);
+      throw new Error(`Backend conversion failed: ${response.status} ${response.statusText}\n${errorText}`);
     }
 
     // Backend returns PCM16 chunks as JSON array of base64 strings
     const result = await response.json();
+    console.log('📦 [AUDIO-CONVERTER] Received response:', {
+      success: result.success,
+      chunkCount: result.chunkCount,
+      totalSize: result.totalSize,
+    });
 
     if (!result.success || !result.chunks) {
-      throw new Error('Invalid response from backend: missing chunks');
+      throw new Error(`Invalid response from backend: ${JSON.stringify(result)}`);
     }
 
-    console.log('✅ [AUDIO-CONVERTER] Received', result.chunkCount, 'chunks from backend');
-    console.log('[AUDIO-CONVERTER] Total size:', result.totalSize, 'bytes');
+    if (result.chunks.length === 0) {
+      console.warn('⚠️  [AUDIO-CONVERTER] Backend returned zero chunks');
+      return [];
+    }
+
+    console.log('✅ [AUDIO-CONVERTER] Received', result.chunkCount, 'chunks (', result.totalSize, 'bytes total)');
 
     // Convert base64 chunks to ArrayBuffers
-    const chunks: ArrayBuffer[] = result.chunks.map((base64: string) =>
-      base64ToArrayBuffer(base64)
-    );
+    const chunks: ArrayBuffer[] = result.chunks.map((base64: string, index: number) => {
+      const buffer = base64ToArrayBuffer(base64);
+      console.log(`  📦 [AUDIO-CONVERTER] Chunk ${index + 1}/${result.chunks.length}: ${buffer.byteLength} bytes`);
+      return buffer;
+    });
 
-    console.log('✅ [AUDIO-CONVERTER] Backend conversion successful:', chunks.length, 'chunks');
+    console.log('✅ [AUDIO-CONVERTER] Backend conversion successful! Total chunks:', chunks.length);
     return chunks;
   } catch (error) {
     console.error('❌ [AUDIO-CONVERTER] Backend conversion failed:', error);
+    if (error instanceof Error) {
+      console.error('❌ [AUDIO-CONVERTER] Error message:', error.message);
+      console.error('❌ [AUDIO-CONVERTER] Error stack:', error.stack);
+    }
     throw error;
   }
 }

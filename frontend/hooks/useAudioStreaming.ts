@@ -143,27 +143,34 @@ export function useAudioStreaming({
    */
   const processRecordedAudio = async (uri: string) => {
     try {
-      console.log('🔄 [AUDIO] Converting M4A to PCM16...');
+      console.log('🔄 [AUDIO-STREAM] Converting M4A to PCM16...');
 
       // Convert M4A to PCM16 chunks
+      // Web: Uses Web Audio API
+      // Mobile: Uploads to backend for FFmpeg conversion
       const pcm16Chunks = await convertM4AToPCM16(uri);
 
       if (pcm16Chunks.length === 0) {
-        console.warn('⚠️  [AUDIO] No PCM16 chunks generated (conversion not implemented)');
-        console.warn('⚠️  [AUDIO] This is expected - audio conversion is a TODO');
+        console.warn('⚠️  [AUDIO-STREAM] No PCM16 chunks generated - empty audio file?');
         return;
       }
 
-      console.log(`📤 [AUDIO] Sending ${pcm16Chunks.length} PCM16 chunks...`);
+      console.log(`✅ [AUDIO-STREAM] Conversion successful! Got ${pcm16Chunks.length} PCM16 chunks`);
+      console.log(`📤 [AUDIO-STREAM] Sending chunks to WebSocket...`);
 
       // Send each chunk via callback
-      for (const chunk of pcm16Chunks) {
+      for (let i = 0; i < pcm16Chunks.length; i++) {
+        const chunk = pcm16Chunks[i];
+        console.log(`  📤 [AUDIO-STREAM] Sending chunk ${i + 1}/${pcm16Chunks.length} (${chunk.byteLength} bytes)`);
         onAudioChunk?.(chunk);
       }
 
-      console.log('✅ [AUDIO] All chunks sent');
+      console.log('✅ [AUDIO-STREAM] All chunks sent successfully!');
     } catch (err) {
-      console.error('❌ [AUDIO] Failed to process audio:', err);
+      console.error('❌ [AUDIO-STREAM] Failed to process audio:', err);
+      if (err instanceof Error) {
+        console.error('❌ [AUDIO-STREAM] Error details:', err.message);
+      }
       throw err;
     }
   };

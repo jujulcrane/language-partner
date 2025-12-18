@@ -277,9 +277,10 @@ export function useRealtimeConnection({
     }
 
     // Validate that we've sent audio chunks
+    // This prevents the input_audio_buffer_commit_empty error from OpenAI
     if (audioChunksSentRef.current === 0) {
-      console.warn('⚠️  [REALTIME] No audio chunks sent - skipping commit');
-      console.warn('💡 [REALTIME] This is expected until audio conversion is implemented');
+      console.error('❌ [REALTIME] No audio chunks sent - cannot commit empty buffer');
+      console.error('💡 [REALTIME] This may indicate audio conversion failed or recording was too short');
       return;
     }
 
